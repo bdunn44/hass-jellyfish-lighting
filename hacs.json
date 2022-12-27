@@ -1,8 +1,4 @@
 {
     "name": "Jellyfish Lighting",
-    "hacs": "1.6.0",
-    "domains": [
-        "light"
-    ],
-    "homeassistant": "0.118.0"
+    "render_readme": true
 }
