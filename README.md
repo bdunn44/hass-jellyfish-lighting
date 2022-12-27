@@ -6,8 +6,6 @@
 [![hacs][hacsbadge]][hacs]
 [![Community Forum][forum-shield]][forum]
 
-_Component to integrate with [jellyfish-lighting][jellyfish-lighting]._
-
 This component is designed to integrate with [jellyfish-lighting][jellyfish-lighting] installations. It currently supports turning lights on & off and playing pre-saved patterns. If your installation includes more than one zone you can control each zone individually **or** all zones at once through a dedicated "All Zones" light entity.
 
 | Light Entities for Mulitple Zones | Playing a Pre-Saved Pattern |
