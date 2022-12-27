@@ -1,6 +1,7 @@
 """Constants for jellyfish-lighting."""
 # Base component constants
 NAME = "Jellyfish Lighting"
+DEVICE = "Jellyfish Controller"
 DOMAIN = "jellyfish_lighting"
 DOMAIN_DATA = f"{DOMAIN}_data"
 VERSION = "0.0.1"
@@ -10,9 +11,6 @@ ISSUE_URL = "https://github.com/bdunn44/hass-jellyfish-lighting/issues"
 
 # Icons
 ICON = "mdi:home-lightbulb-outline"
-
-# Device classes
-BINARY_SENSOR_DEVICE_CLASS = "connectivity"
 
 # Platforms
 LIGHT = "light"

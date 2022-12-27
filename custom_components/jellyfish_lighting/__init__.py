@@ -15,6 +15,7 @@ from .const import (
     CONF_HOST,
     DOMAIN,
     NAME,
+    DEVICE,
     LIGHT,
     STARTUP_MESSAGE,
 )
@@ -44,6 +45,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             "data": entry.data,
         },
     )
+    entry.title = DEVICE
     if hass.data.get(DOMAIN) is None:
         hass.data.setdefault(DOMAIN, {})
         _LOGGER.info(STARTUP_MESSAGE)
@@ -61,6 +63,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
         config_entry_id=entry.entry_id,
         identifiers={(DOMAIN, host)},
         manufacturer=NAME,
+        model=DEVICE,
         name=NAME,
     )
 
