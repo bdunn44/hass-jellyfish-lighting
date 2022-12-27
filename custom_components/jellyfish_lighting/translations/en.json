@@ -1,8 +1,8 @@
 {
+    "title": "Jellyfish Lighting",
     "config": {
         "step": {
             "user": {
-                "title": "Jellyfish Lighting",
                 "description": "If you need help with the configuration have a look here: https://github.com/bdunn44/hass-jellyfish-lighting",
                 "data": {
                     "host": "Controller Host/IP"
