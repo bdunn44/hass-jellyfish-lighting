@@ -5,9 +5,7 @@
                 "title": "Jellyfish Lighting",
                 "description": "If you need help with the configuration have a look here: https://github.com/bdunn44/hass-jellyfish-lighting",
                 "data": {
-                    "host": "Controller Host/IP",
-                    "username": "Username",
-                    "password": "Password"
+                    "host": "Controller Host/IP"
                 }
             }
         },
@@ -16,15 +14,6 @@
         },
         "abort": {
             "single_instance_allowed": "Only a single instance is allowed."
-        }
-    },
-    "options": {
-        "step": {
-            "user": {
-                "data": {
-                    "light": "Light enabled"
-                }
-            }
         }
     }
 }
