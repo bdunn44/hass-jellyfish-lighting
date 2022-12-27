@@ -25,8 +25,6 @@ This component is designed to integrate with [jellyfish-lighting][jellyfish-ligh
 
 **_Note: it is highly recommended to set a static IP for your controller if you haven't already!_**
 
-***
-
 [jellyfish-lighting]: https://jellyfishlighting.com/
 [commits-shield]: https://img.shields.io/github/commit-activity/y/custom-components/blueprint.svg?style=for-the-badge
 [commits]: https://github.com/bdunn44/hass-jellyfish-lighting/commits/master
