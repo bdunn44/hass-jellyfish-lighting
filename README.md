@@ -1,4 +1,4 @@
-# <img src="https://raw.githubusercontent.com/bdunn44/hass-jellyfish-lighting/master/.github/images/jellyfish-icon.png" alt="Jellyfish Lighting icon" height="50px"> Jellyfish Lighting for Home Assistant
+# <img src=".github/images/jellyfish-icon.png" alt="Jellyfish Lighting icon" height="50px"> Jellyfish Lighting for Home Assistant
 
 [![GitHub Release][releases-badge]][releases]
 [![GitHub Activity][commits-badge]][commits]
@@ -10,17 +10,9 @@
 
 This component is designed to integrate with [Jellyfish Lighting][jellyfish-lighting] installations. It currently supports turning lights on & off and playing pre-saved patterns. If your installation includes more than one zone you can control each zone individually **or** all zones at once through a dedicated "All Zones" light entity.
 
-<div style="display:flex">
-    <div style="margin-right:20px">
-        <p style="font-weight:bold;text-align:center">Light Entities for Multiple Zones</p>
-        <img src="https://raw.githubusercontent.com/bdunn44/hass-jellyfish-lighting/master/.github/images/example_zones.png" alt="Example Zone Entities"/>
-    </div>
-    <div>
-        <p style="font-weight:bold;text-align:center">Playing a Pre-Saved Pattern</p>
-        <img src="https://raw.githubusercontent.com/bdunn44/hass-jellyfish-lighting/master/.github/images/example_play_pattern.png" alt="Example of Playing a Pre-Saved Pattern"/>
-    </div>
-</div>
-
+| Light Entities for Mulitple Zones | Playing a Pre-Saved Pattern |
+| :-------------------------------: | :-------------------------: |
+|<img src=".github/images/example_zones.png" alt="Example Zone Entities"/>|<img src=".github/images/example_play_pattern.png" alt="Example of Playing a Pre-Saved Pattern"/>|
 
 ## Installation via HACS
 
