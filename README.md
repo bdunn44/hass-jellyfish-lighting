@@ -5,6 +5,7 @@
 [![License][license-shield]](LICENSE)
 [![hacs][hacsbadge]][hacs]
 [![Community Forum][forum-shield]][forum]
+[![BuyMeCoffee][buymecoffeebadge]][buymecoffee]
 
 This component is designed to integrate with [jellyfish-lighting][jellyfish-lighting] installations. It currently supports turning lights on & off and playing pre-saved patterns. If your installation includes more than one zone you can control each zone individually **or** all zones at once through a dedicated "All Zones" light entity.
 
@@ -49,6 +50,8 @@ _**Note:** I am working to get this integration added to the default HACS librar
 [license-shield]: https://img.shields.io/github/license/custom-components/blueprint.svg?style=for-the-badge
 [releases-shield]: https://img.shields.io/github/release/custom-components/blueprint.svg?style=for-the-badge
 [releases]: https://github.com/bdunn44/hass-jellyfish-lighting/releases
+[buymecoffee]: https://www.buymeacoffee.com/bdunn44
+[buymecoffeebadge]: https://img.shields.io/badge/buy%20me%20a%20coffee-donate-yellow.svg?style=for-the-badge
 
 [example-zones]: example_zones.png
 [example-play-pattern]: example_play_pattern.png
