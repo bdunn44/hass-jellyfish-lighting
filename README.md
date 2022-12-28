@@ -12,7 +12,21 @@ This component is designed to integrate with [jellyfish-lighting][jellyfish-ligh
 | :-------------------------------: | :-------------------------: |
 |<img src="example_zones.png" alt="Example Zone Entities" height="300"/>|<img src="example_play_pattern.png" alt="Example of Playing a Pre-Saved Pattern" height="300"/>|
 
-## Installation
+## Installation via HACS
+
+1. Install HACS in your Home Assisstant installation (see https://hacs.xyz/ for detailed instructions)
+2. Navigate to HACS within your Home Assistant instance (Menu > HACS)
+3. Select "Integrations"
+4. In the upper-right hand corner, click the 3-dot menu button and select "Custom Repositories"
+5. Paste the link to this repo (https://github.com/bdunn44/hass-jellyfish-lighting) into the "Repository" field, select "Integration" for the category, and click "Add"
+6. Search for the "Jellyfish Lighting" integration, open it, and click "Download"
+7. Restart Home Assistant
+7. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "Jellyfish Lighting"
+8. Enter the host/IP of your Jellyfish Controller.
+
+_**Note:** I am working to get this integration added to the default HACS library. Stay tuned!_
+
+## Manual Installation
 
 1. Using the tool of choice open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
 2. If you do not have a `custom_components` directory (folder) there, you need to create it.
