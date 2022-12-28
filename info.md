@@ -1,4 +1,4 @@
-# <img src="images/icon%402x.png" alt="Jellyfish Lighting icon" height="50px"> Jellyfish Lighting for Home Assistant
+# <img src="https://raw.githubusercontent.com/bdunn44/hass-jellyfish-lighting/master/.github/images/jellyfish-icon.png" alt="Jellyfish Lighting icon" height="50px"> Jellyfish Lighting for Home Assistant
 
 [![GitHub Release][releases-badge]][releases]
 [![GitHub Activity][commits-badge]][commits]
@@ -13,11 +13,11 @@ This component is designed to integrate with [Jellyfish Lighting][jellyfish-ligh
 <div style="display:flex">
     <div style="margin-right:20px">
         <p style="font-weight:bold;text-align:center">Light Entities for Multiple Zones</p>
-        <img src="images/example_zones.png" alt="Example Zone Entities" height="300px"/>
+        <img src="https://raw.githubusercontent.com/bdunn44/hass-jellyfish-lighting/master/.github/images/example_zones.png" alt="Example Zone Entities" height="300px"/>
     </div>
     <div>
         <p style="font-weight:bold;text-align:center">Playing a Pre-Saved Pattern</p>
-        <img src="images/example_play_pattern.png" alt="Example of Playing a Pre-Saved Pattern" height="300px"/>
+        <img src="https://raw.githubusercontent.com/bdunn44/hass-jellyfish-lighting/master/.github/images/example_play_pattern.png" alt="Example of Playing a Pre-Saved Pattern" height="300px"/>
     </div>
 </div>
 
