@@ -12,7 +12,7 @@ This component is designed to integrate with [Jellyfish Lighting][jellyfish-ligh
 
 | Light Entities for Mulitple Zones | Playing a Pre-Saved Pattern |
 | :-------------------------------: | :-------------------------: |
-|<img src=".github/images/example_zones.png" alt="Example Zone Entities"/>|<img src=".github/images/example_play_pattern.png" alt="Example of Playing a Pre-Saved Pattern"/>|
+|<img src=".github/images/example_zones.png" alt="Example Zone Entities" height="300px"/>|<img src=".github/images/example_play_pattern.png" alt="Example of Playing a Pre-Saved Pattern" height="300px"/>|
 
 ## Installation via HACS
 

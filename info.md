@@ -13,11 +13,11 @@ This component is designed to integrate with [Jellyfish Lighting][jellyfish-ligh
 <div style="display:flex">
     <div style="margin-right:20px">
         <p style="font-weight:bold;text-align:center">Light Entities for Multiple Zones</p>
-        <img src="images/example_zones.png" alt="Example Zone Entities" height="300"/>
+        <img src="images/example_zones.png" alt="Example Zone Entities" height="300px"/>
     </div>
     <div>
         <p style="font-weight:bold;text-align:center">Playing a Pre-Saved Pattern</p>
-        <img src="images/example_play_pattern.png" alt="Example of Playing a Pre-Saved Pattern" height="300"/>
+        <img src="images/example_play_pattern.png" alt="Example of Playing a Pre-Saved Pattern" height="300px"/>
     </div>
 </div>
 
