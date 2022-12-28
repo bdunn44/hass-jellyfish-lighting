@@ -4,7 +4,7 @@ NAME = "Jellyfish Lighting"
 DEVICE = "Jellyfish Controller"
 DOMAIN = "jellyfish_lighting"
 DOMAIN_DATA = f"{DOMAIN}_data"
-VERSION = "0.0.1"
+VERSION = "0.1.1"
 ATTRIBUTION = "Leverages the Jellyfish Lighting Python API \
     created by @vinenoobjelly https://github.com/vinenoobjelly/jellyfishlights-py"
 ISSUE_URL = "https://github.com/bdunn44/hass-jellyfish-lighting/issues"
