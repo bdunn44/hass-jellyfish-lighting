@@ -1,6 +1,6 @@
 {
   "domain": "jellyfish_lighting",
-  "name": "Jellyfish Lighting",
+  "name": "JellyFish Lighting",
   "integration_type": "hub",
   "documentation": "https://github.com/bdunn44/hass-jellyfish-lighting",
   "iot_class": "local_polling",

@@ -1,9 +1,9 @@
 {
-    "title": "Jellyfish Lighting (jellyfishlighting.com)",
+    "title": "JellyFish Lighting (jellyfishlighting.com)",
     "config": {
         "step": {
             "user": {
-                "description": "Please enter the hostname or IP address of your Jellyfish Lighting controller.",
+                "description": "Please enter the hostname or IP address of your JellyFish Lighting controller.",
                 "data": {
                     "host": "Controller Host/IP"
                 }

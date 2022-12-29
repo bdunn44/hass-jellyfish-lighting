@@ -1,4 +1,4 @@
-# <img src=".github/images/jellyfish-icon.png" alt="Jellyfish Lighting icon" height="50px"> Jellyfish Lighting for Home Assistant
+# <img src=".github/images/jellyfish-icon.png" alt="JellyFish Lighting icon" height="50px"> JellyFish Lighting for Home Assistant
 
 [![GitHub Release][releases-badge]][releases]
 [![GitHub Activity][commits-badge]][commits]
@@ -8,11 +8,13 @@
 [![Community Forum][forum-badge]][forum]
 [![BuyMeCoffee][buymecoffee-badge]][buymecoffee]
 
-This component is designed to integrate with [Jellyfish Lighting][jellyfish-lighting] installations. It currently supports turning lights on & off and playing pre-saved patterns. If your installation includes more than one zone you can control each zone individually **or** all zones at once through a dedicated "All Zones" light entity.
+This component is designed to integrate with [JellyFish Lighting][jellyfish-lighting] installations. It currently supports turning lights on & off and playing pre-saved patterns. If your installation includes more than one zone you can control each zone individually **or** all zones at once through a dedicated "All Zones" light entity.
 
 | Light Entities for Mulitple Zones | Playing a Pre-Saved Pattern |
 | :-------------------------------: | :-------------------------: |
 |<img src=".github/images/example_zones.png" alt="Example Zone Entities" height="300px"/>|<img src=".github/images/example_play_pattern.png" alt="Example of Playing a Pre-Saved Pattern" height="300px"/>|
+
+This is an unofficial integration that has not been developed or endorsed by JellyFish Lighting.
 
 ## Installation via HACS
 
@@ -21,10 +23,10 @@ This component is designed to integrate with [Jellyfish Lighting][jellyfish-ligh
 1. Select "Integrations"
 1. In the upper-right hand corner, click the 3-dot menu button and select "Custom Repositories"
 1. Paste the link to this repo (https://github.com/bdunn44/hass-jellyfish-lighting) into the "Repository" field, select "Integration" for the category, and click "Add"
-1. Search for the "Jellyfish Lighting" integration, open it, and click "Download"
+1. Search for the "JellyFish Lighting" integration, open it, and click "Download"
 1. Restart Home Assistant
-1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "Jellyfish Lighting"
-1. Enter the host/IP of your Jellyfish Controller.
+1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "JellyFish Lighting"
+1. Enter the host/IP of your JellyFish Controller.
 
 _**Note:** I am working to get this integration added to the default HACS library. Stay tuned!_
 
@@ -36,10 +38,20 @@ _**Note:** I am working to get this integration added to the default HACS librar
 1. Download _all_ the files from the `custom_components/jellyfish-lighting/` directory (folder) in this repository.
 1. Place the files you downloaded in the new directory (folder) you created.
 1. Restart Home Assistant
-1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "Jellyfish Lighting"
+1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "JellyFish Lighting"
 1. Enter the host/IP of your Jellyfish Controller.
 
 _**Note:** it is highly recommended to set a static IP for your controller if you haven't already!_
+
+## Trademark Legal Notices
+
+All product names, trademarks and registered trademarks in the images in this
+repository, are property of their respective owners. All images in this
+repository are used by the project for identification purposes
+only.
+
+The use of these names, trademarks and brands appearing in these image files,
+do not imply endorsement.
 
 [jellyfish-lighting]: https://jellyfishlighting.com/
 [commits-badge]: https://img.shields.io/github/commit-activity/y/bdunn44/hass-jellyfish-lighting?style=flat-square

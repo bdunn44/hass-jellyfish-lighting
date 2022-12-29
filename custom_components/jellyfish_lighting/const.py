@@ -1,11 +1,11 @@
 """Constants for jellyfish-lighting."""
 # Base component constants
-NAME = "Jellyfish Lighting"
+NAME = "JellyFish Lighting"
 DEVICE = "Jellyfish Controller"
 DOMAIN = "jellyfish_lighting"
 DOMAIN_DATA = f"{DOMAIN}_data"
 VERSION = "1.0.0"
-ATTRIBUTION = "Leverages the Jellyfish Lighting Python API \
+ATTRIBUTION = "Leverages the JellyFish Lighting Python API \
     created by @vinenoobjelly https://github.com/vinenoobjelly/jellyfishlights-py"
 ISSUE_URL = "https://github.com/bdunn44/hass-jellyfish-lighting/issues"
 

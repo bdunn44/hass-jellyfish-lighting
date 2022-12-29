@@ -13,7 +13,7 @@ _LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
 class JellyfishLightingFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
-    """Config flow for Jellyfish Lighting"""
+    """Config flow for JellyFish Lighting"""
 
     VERSION = 1
     CONNECTION_CLASS = config_entries.CONN_CLASS_LOCAL_POLL
@@ -64,13 +64,13 @@ class JellyfishLightingFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         """Return true if host is valid."""
         try:
             _LOGGER.info(
-                "Testing connection to Jellyfish Lighting controller at %s...", host
+                "Testing connection to JellyFish Lighting controller at %s...", host
             )
             session = async_create_clientsession(self.hass)
             client = JellyfishLightingApiClient(host, session, self.hass)
             await client.async_get_data()
             _LOGGER.info(
-                "Successfully connected to Jellyfish Lighting controller at %s!", host
+                "Successfully connected to JellyFish Lighting controller at %s!", host
             )
             return True
         except Exception:  # pylint: disable=broad-except

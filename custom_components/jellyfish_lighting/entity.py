@@ -5,7 +5,7 @@ from .const import DOMAIN, CONF_HOST, ATTRIBUTION
 
 
 class JellyfishLightingEntity(CoordinatorEntity):
-    """Entity for the Jellyfish Lighting integration"""
+    """Entity for the JellyFish Lighting integration"""
 
     def __init__(self, coordinator, config_entry):
         super().__init__(coordinator)

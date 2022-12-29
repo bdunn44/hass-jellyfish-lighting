@@ -1,5 +1,5 @@
 """
-Custom integration to integrate Jellyfish Lighting with Home Assistant.
+Custom integration to integrate JellyFish Lighting with Home Assistant.
 """
 from datetime import timedelta
 import logging
@@ -34,7 +34,7 @@ async def async_setup(
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Set up this integration using UI."""
-    _LOGGER.info("Setting up Jellyfish Lighting integration")
+    _LOGGER.info("Setting up JellyFish Lighting integration")
     _LOGGER.debug(
         "async_setup_entry config entry is: %s",
         {
@@ -95,7 +95,7 @@ class JellyfishLightingDataUpdateCoordinator(DataUpdateCoordinator):
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Handle removal of an entry."""
-    _LOGGER.info("Unloading Jellyfish Lighting integration")
+    _LOGGER.info("Unloading JellyFish Lighting integration")
     # coordinator = hass.data[DOMAIN][entry.entry_id]
     unloaded = await hass.config_entries.async_forward_entry_unload(entry, LIGHT)
     if unloaded:
@@ -105,6 +105,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload config entry."""
-    _LOGGER.info("Reloading Jellyfish Lighting integration")
+    _LOGGER.info("Reloading JellyFish Lighting integration")
     await async_unload_entry(hass, entry)
     await async_setup_entry(hass, entry)
