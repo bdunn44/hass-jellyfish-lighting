@@ -102,6 +102,7 @@ class JellyfishLightingApiClient:
                     # Check if state is solid RGB
                     if (
                         state.file == ""
+                        and state.data is not None
                         and state.data.numOfLeds == "Color"
                         and state.data.runData == "No Color Transform"
                         and state.data.colorPos.effect == "No Effect"
