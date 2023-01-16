@@ -1,9 +1,9 @@
-name: Releases
+name: Release actions
 
 on:
   push:
     tags:
-    - 'v*'
+    - '*'
 
 jobs:
 
@@ -12,11 +12,17 @@ jobs:
     permissions:
       contents: write
     steps:
+    - uses: actions/checkout@master
+    - name: Archive Release
+      uses: thedoctor0/zip-release@0.7.0
+      with:
+        type: 'zip'
+        filename: '.github/releases/hass-jellyfish-lighting.zip'
+        exclusions: '.devcontainer/** .github/** .vscode/** *.git* /*__pycache__/* .editorconfig requirements_dev.txt setup.cfg CONTRIBUTING.md'
     - uses: actions/checkout@v2
     - uses: ncipollo/release-action@v1.12.0
       with:
-        artifacts: "releases/hass-jellyfish-lighting.zip"
-        bodyFile: "body.md"
+        artifacts: ".github/releases/hass-jellyfish-lighting.zip"
         draft: true
         generateReleaseNotes: true
         makeLatest: true
