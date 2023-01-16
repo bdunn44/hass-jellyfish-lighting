@@ -63,7 +63,7 @@ class JellyfishLightingApiClient:
                 if self.zones is not None and set(self.zones) != set(
                     self._controller.zones
                 ):
-                    # TODO: reload entities
+                    # TODO: reload entities?
                     pass
 
                 # Get zones
@@ -99,28 +99,10 @@ class JellyfishLightingApiClient:
                     state = await self._hass.async_add_executor_job(
                         self._controller.getRunPattern, zone
                     )
-                    # Check if state is solid RGB
-                    if (
-                        state.file == ""
-                        and state.data is not None
-                        and state.data.numOfLeds == "Color"
-                        and state.data.runData == "No Color Transform"
-                        and state.data.colorPos.effect == "No Effect"
-                        and len(state.data.colors) == 3
-                    ):
-                        self.states[zone] = (
-                            state.state,
-                            None,
-                            tuple(state.data.colors),
-                            state.data.colorPos.brightness,
-                        )
-                    else:
-                        self.states[zone] = (
-                            state.state,
-                            state.file if state.file != "" else None,
-                            None,
-                            None,
-                        )
+                    self.states[zone] = (
+                        state.state,
+                        state.file if state.file != "" else None,
+                    )
         except BaseException as ex:  # pylint: disable=broad-except
             self._reconnect = True
             msg = f"Failed to get zone data from JellyFish Lighting controller at {self.host}"
@@ -133,8 +115,8 @@ class JellyfishLightingApiClient:
             async with self._lock:
                 _LOGGER.debug("Turning on zone(s) %s", zones or "[all zones]")
                 await self._hass.async_add_executor_job(self._controller.turnOn, zones)
-                self._reconnect = True  # hacky, but avoids intermittent multi-repsonse issues w/ websocket
         except BaseException as ex:  # pylint: disable=broad-except
+            self._reconnect = True
             msg = f"Failed to connect to turn on JellyFish Lighting zone(s) '{zones or '[all zones]'}'"
             _LOGGER.exception(msg)
             raise Exception(msg) from ex
@@ -145,8 +127,8 @@ class JellyfishLightingApiClient:
             async with self._lock:
                 _LOGGER.debug("Turning off zone(s) %s", zones or "[all zones]")
                 await self._hass.async_add_executor_job(self._controller.turnOff, zones)
-                self._reconnect = True  # hacky, but avoids intermittent multi-repsonse issues w/ websocket
         except BaseException as ex:  # pylint: disable=broad-except
+            self._reconnect = True
             msg = f"Failed to connect to turn off JellyFish Lighting zone(s) '{zones or '[all zones]'}'"
             _LOGGER.exception(msg)
             raise Exception(msg) from ex
@@ -163,29 +145,8 @@ class JellyfishLightingApiClient:
                 await self._hass.async_add_executor_job(
                     self._controller.playPattern, pattern, zones
                 )
-                self._reconnect = True  # hacky, but avoids intermittent multi-repsonse issues w/ websocket
         except BaseException as ex:  # pylint: disable=broad-except
+            self._reconnect = True
             msg = f"Failed to play pattern '{pattern}' on JellyFish Lighting zone(s) '{zones or '[all zones]'}'"
-            _LOGGER.exception(msg)
-            raise Exception(msg) from ex
-
-    async def async_play_color(
-        self, rgb: tuple, brightness: int, zones: List[str] = None
-    ):
-        """Turn one or more zones on and sets the color of all lights. Affects all zones if zone list is None"""
-        try:
-            async with self._lock:
-                _LOGGER.debug(
-                    "Playing color '%s' at %s pct brightness on zone(s) %s",
-                    rgb,
-                    brightness,
-                    zones or "[all zones]",
-                )
-                await self._hass.async_add_executor_job(
-                    self._controller.sendColor, rgb, brightness, zones
-                )
-                self._reconnect = True  # hacky, but avoids intermittent multi-repsonse issues w/ websocket
-        except BaseException as ex:  # pylint: disable=broad-except
-            msg = f"Failed to play color '{rgb}' at brightness {brightness} on JellyFish Lighting zone(s) '{zones or '[all zones]'}'"
             _LOGGER.exception(msg)
             raise Exception(msg) from ex
