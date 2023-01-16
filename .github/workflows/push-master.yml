@@ -7,6 +7,7 @@ on:
 
 jobs:
   rm:
+    runs-on: "ubuntu-latest"
     steps:
     - name: Remove release archive
       uses: JesseTG/rm@v1.0.3
