@@ -17,11 +17,11 @@ jobs:
       uses: thedoctor0/zip-release@0.7.0
       with:
         type: 'zip'
-        filename: 'hass-jellyfish-lighting.zip'
-        exclusions: '/*.devcontainer/* /*.github/* /*.git/* /*.vscode/* *.git* requirements_dev.txt setup.cfg CONTRIBUTING.md'
+        directory: 'custom_components/jellyfish_lighting'
+        filename: 'jellyfish_lighting.zip'
     - uses: ncipollo/release-action@v1.12.0
       with:
-        artifacts: 'hass-jellyfish-lighting.zip'
+        artifacts: 'custom_components/jellyfish_lighting/jellyfish_lighting.zip'
         draft: true
         generateReleaseNotes: true
         makeLatest: true
