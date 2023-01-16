@@ -1,0 +1,20 @@
+name: Push master actions
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+
+  build:
+    runs-on: "ubuntu-latest"
+    steps:
+    - uses: actions/checkout@master
+    - name: Archive Release
+      uses: thedoctor0/zip-release@0.7.0
+      with:
+        type: 'zip'
+        directory: '.github/releases'
+        filename: 'hass-jellyfish-lighting.zip'
+        exclusions: '.devcontainer/ .github/ .vscode/ *.git* /*__pycache__/* .editorconfig requirements_dev.txt setup.cfg CONTRIBUTING.md'
