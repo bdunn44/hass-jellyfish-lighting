@@ -1,3 +1,5 @@
 {
-    "name": "JellyFish Lighting"
+    "name": "JellyFish Lighting",
+    "zip_release": true,
+    "filename": "hass-jellyfish-lighting.zip"
 }
