@@ -6,6 +6,12 @@ on:
       - dev
 
 jobs:
+  rm:
+    steps:
+    - name: Remove release archive
+      uses: JesseTG/rm@v1.0.3
+      with:
+        path: .github/releases/hass-jellyfish-lighting.zip
 
   build:
     runs-on: "ubuntu-latest"
