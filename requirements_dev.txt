@@ -1,2 +1,2 @@
 homeassistant
-git+https://github.com/bdunn44/jellyfishlights-py@master#jellyfishlights-py==0.5.0beta14
+jellyfishlights-py==0.5.0
