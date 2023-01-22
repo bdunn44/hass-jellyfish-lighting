@@ -180,8 +180,8 @@ class JellyFishLightingController(jf.JellyFishController):
             raise Exception(msg) from ex
 
     def getAndStoreZones(self) -> Dict:
+        self.connect()
         try:
-            self.connect()
             with self._lock:
                 return super().getAndStoreZones()
         except BaseException as ex:  # pylint: disable=broad-except
@@ -191,8 +191,8 @@ class JellyFishLightingController(jf.JellyFishController):
             raise Exception(msg) from ex
 
     def getAndStorePatterns(self) -> List[jf.PatternName]:
+        self.connect()
         try:
-            self.connect()
             with self._lock:
                 return super().getAndStorePatterns()
         except BaseException as ex:  # pylint: disable=broad-except
@@ -202,8 +202,8 @@ class JellyFishLightingController(jf.JellyFishController):
             raise Exception(msg) from ex
 
     def getRunPattern(self, zone: str = None) -> jf.RunPatternClass:
+        self.connect()
         try:
-            self.connect()
             with self._lock:
                 return super().getRunPattern(zone)
         except BaseException as ex:  # pylint: disable=broad-except
@@ -213,8 +213,8 @@ class JellyFishLightingController(jf.JellyFishController):
             raise Exception(msg) from ex
 
     def turnOn(self, zones: List[str] = None) -> None:
+        self.connect()
         try:
-            self.connect()
             with self._lock:
                 super().turnOn(zones)
         except BaseException as ex:  # pylint: disable=broad-except
@@ -224,8 +224,8 @@ class JellyFishLightingController(jf.JellyFishController):
             raise Exception(msg) from ex
 
     def turnOff(self, zones: List[str] = None) -> None:
+        self.connect()
         try:
-            self.connect()
             with self._lock:
                 super().turnOff(zones)
         except BaseException as ex:  # pylint: disable=broad-except
@@ -235,8 +235,8 @@ class JellyFishLightingController(jf.JellyFishController):
             raise Exception(msg) from ex
 
     def playPattern(self, pattern: str, zones: List[str] = None) -> None:
+        self.connect()
         try:
-            self.connect()
             with self._lock:
                 super().playPattern(pattern, zones)
         except BaseException as ex:  # pylint: disable=broad-except
