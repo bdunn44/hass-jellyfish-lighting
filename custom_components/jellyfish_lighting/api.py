@@ -194,6 +194,8 @@ class JellyFishLightingController(jf.JellyFishController):
                 if not super().connected:
                     _LOGGER.debug("Connecting to JellyFish Lighting controller")
                     super().connect()
+                if super().connected:
+                    self._reconnect = False
         except BaseException as ex:  # pylint: disable=broad-except
             self._reconnect = True
             msg = f"Failed to connect/reconnect to JellyFish Lighting controller at {self._host}"
@@ -201,42 +203,94 @@ class JellyFishLightingController(jf.JellyFishController):
             raise Exception(msg) from ex
 
     def disconnect(self) -> None:
-        with self._lock:
-            super().disconnect()
+        try:
+            with self._lock:
+                super().disconnect()
+        except BaseException as ex:  # pylint: disable=broad-except
+            self._reconnect = True
+            msg = (
+                f"Failed to disconnect to JellyFish Lighting controller at {self._host}"
+            )
+            _LOGGER.exception(msg)
+            raise Exception(msg) from ex
 
     def getAndStoreZones(self) -> Dict:
         self.connect()
-        with self._lock:
-            return super().getAndStoreZones()
+        try:
+            with self._lock:
+                return super().getAndStoreZones()
+        except BaseException as ex:  # pylint: disable=broad-except
+            self._reconnect = True
+            msg = f"Failed to get zones from JellyFish Lighting controller at {self._host}"
+            _LOGGER.exception(msg)
+            raise Exception(msg) from ex
 
     def getAndStorePatterns(self) -> List[jf.PatternName]:
         self.connect()
-        with self._lock:
-            return super().getAndStorePatterns()
+        try:
+            with self._lock:
+                return super().getAndStorePatterns()
+        except BaseException as ex:  # pylint: disable=broad-except
+            self._reconnect = True
+            msg = f"Failed to get patterns from JellyFish Lighting controller at {self._host}"
+            _LOGGER.exception(msg)
+            raise Exception(msg) from ex
 
     def getRunPattern(self, zone: str = None) -> jf.RunPatternClass:
         self.connect()
-        with self._lock:
-            return super().getRunPattern(zone)
+        try:
+            with self._lock:
+                return super().getRunPattern(zone)
+        except BaseException as ex:  # pylint: disable=broad-except
+            self._reconnect = True
+            msg = f"Failed to get run pattern on JellyFish Lighting controller at {self._host}"
+            _LOGGER.exception(msg)
+            raise Exception(msg) from ex
 
     def turnOn(self, zones: List[str] = None) -> None:
         self.connect()
-        with self._lock:
-            super().turnOn(zones)
+        try:
+            with self._lock:
+                super().turnOn(zones)
+        except BaseException as ex:  # pylint: disable=broad-except
+            self._reconnect = True
+            msg = f"Failed to turn on zone on JellyFish Lighting controller at {self._host}"
+            _LOGGER.exception(msg)
+            raise Exception(msg) from ex
 
     def turnOff(self, zones: List[str] = None) -> None:
         self.connect()
-        with self._lock:
-            super().turnOff(zones)
+        try:
+            with self._lock:
+                super().turnOff(zones)
+        except BaseException as ex:  # pylint: disable=broad-except
+            self._reconnect = True
+            msg = f"Failed to turn off zone on JellyFish Lighting controller at {self._host}"
+            _LOGGER.exception(msg)
+            raise Exception(msg) from ex
 
     def playPattern(self, pattern: str, zones: List[str] = None) -> None:
         self.connect()
-        with self._lock:
-            super().playPattern(pattern, zones)
+        try:
+            with self._lock:
+                super().playPattern(pattern, zones)
+        except BaseException as ex:  # pylint: disable=broad-except
+            self._reconnect = True
+            msg = f"Failed to play pattern on JellyFish Lighting controller at {self._host}"
+            _LOGGER.exception(msg)
+            raise Exception(msg) from ex
 
     def sendColor(
         self, rgb: Tuple[int, int, int], brightness: int = 100, zones: List[str] = None
     ) -> None:
         self.connect()
-        with self._lock:
-            super().sendColor(rgb, brightness, zones)
+        try:
+            with self._lock:
+                super().sendColor(rgb, brightness, zones)
+        except BaseException as ex:  # pylint: disable=broad-except
+            self._reconnect = True
+            msg = (
+                f"Failed to send color on JellyFish Lighting controller at {self._host}"
+            )
+            _LOGGER.exception(msg)
+            raise Exception(msg) from ex
