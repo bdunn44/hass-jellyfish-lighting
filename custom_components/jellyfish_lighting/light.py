@@ -8,6 +8,8 @@ from homeassistant.components.light import (
     LightEntityFeature,
     ColorMode,
     ATTR_EFFECT,
+    ATTR_BRIGHTNESS,
+    ATTR_RGB_COLOR,
 )
 from .const import DOMAIN
 from . import JellyfishLightingDataUpdateCoordinator, JellyfishLightingApiClient
@@ -37,9 +39,9 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
     ) -> None:
         """Initialize."""
         self._attr_supported_features = LightEntityFeature.EFFECT
-        self._attr_supported_color_modes = {ColorMode.ONOFF}
+        self._attr_supported_color_modes = {ColorMode.RGB}
         self.api: JellyfishLightingApiClient = coordinator.api
-        self._attr_color_mode = ColorMode.ONOFF
+        self._attr_color_mode = ColorMode.RGB
         self._attr_icon = "mdi:led-strip-variant"
         self._attr_assumed_state = False
         self.zone = zone
@@ -73,36 +75,45 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
         state = self.api.states[self.zone]
         self._attr_is_on = state[0] == 1
         self._attr_effect = state[1]
+        self._attr_rgb_color = state[2]
+        self._attr_brightness = state[3]
 
         _LOGGER.debug(
-            "Updated state for %s (state: %s, effect: %s)",
+            "Updated state for %s (state: %s, effect: %s, rgb: %s, brightness: %s)",
             self.zone,
             "ON" if self._attr_is_on else "OFF",
             self._attr_effect,
+            self._attr_rgb_color,
+            self._attr_brightness,
         )
         self.async_write_ha_state()
 
     async def async_turn_on(self, **kwargs):  # pylint: disable=unused-argument
         """Turn on the light."""
-        _LOGGER.debug("In async_turn_on for '%s'. kwargs is %s", self.zone, kwargs)
-        if ATTR_EFFECT in kwargs:
-            self._attr_effect = kwargs.get(ATTR_EFFECT)
-
+        effect = kwargs.get(ATTR_EFFECT)
+        rgb = kwargs.get(ATTR_RGB_COLOR)
+        brightness = kwargs.get(ATTR_BRIGHTNESS)
+        if rgb or brightness:
+            brightness = int(brightness / 255) if brightness else 100
+            if not rgb:
+                rgb = (255, 255, 255)
         _LOGGER.debug(
             "Turning on %s (effect: %s, color: %s, brightness: %s)",
             self.zone,
-            self._attr_effect,
-            self._attr_rgb_color,
-            self._attr_brightness,
+            effect,
+            rgb,
+            brightness,
         )
-        if self._attr_effect is not None:
-            await self.api.async_play_pattern(self._attr_effect, [self.zone])
+        if effect is not None:
+            await self.api.async_play_pattern(effect, [self.zone])
+        elif rgb is not None:
+            await self.api.async_send_color(rgb, brightness, [self.zone])
         else:
             await self.api.async_turn_on([self.zone])
         await self.async_refresh_data()
 
     async def async_turn_off(self, **kwargs):  # pylint: disable=unused-argument
         """Turn off the light."""
-        _LOGGER.debug("In async_turn_off for '%s'. kwargs is %s", self.zone, kwargs)
+        _LOGGER.debug("Turning off '%s'", self.zone)
         await self.api.async_turn_off([self.zone])
         await self.async_refresh_data()

@@ -1,6 +1,6 @@
 """Sample API Client."""
 import logging
-from typing import List, Dict
+from typing import List, Dict, Tuple
 from threading import Lock
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
@@ -89,10 +89,26 @@ class JellyfishLightingApiClient:
                 state = await self._hass.async_add_executor_job(
                     controller.getRunPattern, zone
                 )
-                self.states[zone] = (
-                    state.state,
-                    state.file if state.file != "" else None,
-                )
+                if (
+                    state.file == ""
+                    and state.data
+                    and state.data.numOfLeds == "Color"
+                    and len(state.data.colors) == 3
+                ):
+                    # state is solid RGB
+                    self.states[zone] = (
+                        state.state,
+                        None,
+                        tuple(state.data.colors),
+                        state.data.colorPos.brightness,
+                    )
+                else:
+                    self.states[zone] = (
+                        state.state,
+                        state.file if state.file != "" else None,
+                        None,
+                        None,
+                    )
         except BaseException as ex:  # pylint: disable=broad-except
             msg = f"Failed to get zone data for [{', '.join(zones)}] from JellyFish Lighting controller at {self.host}"
             _LOGGER.exception(msg)
@@ -135,6 +151,25 @@ class JellyfishLightingApiClient:
             )
         except BaseException as ex:  # pylint: disable=broad-except
             msg = f"Failed to play pattern '{pattern}' on JellyFish Lighting zone(s) '{zones or '[all zones]'}'"
+            _LOGGER.exception(msg)
+            raise Exception(msg) from ex
+
+    async def async_send_color(
+        self, rgb: Tuple[int, int, int], brightness: int = 100, zones: List[str] = None
+    ):
+        """Turn one or more zones on and applies a preset pattern. Affects all zones if zone list is None"""
+        try:
+            _LOGGER.debug(
+                "Sending color %s at %s brightness to zone(s) %s",
+                rgb,
+                brightness,
+                zones or "[all zones]",
+            )
+            await self._hass.async_add_executor_job(
+                self._entity_controller.sendColor, rgb, brightness, zones
+            )
+        except BaseException as ex:  # pylint: disable=broad-except
+            msg = f"Failed to send color '{rgb}' on JellyFish Lighting zone(s) '{zones or '[all zones]'}'"
             _LOGGER.exception(msg)
             raise Exception(msg) from ex
 
@@ -198,3 +233,10 @@ class JellyFishLightingController(jf.JellyFishController):
         self.connect()
         with self._lock:
             super().playPattern(pattern, zones)
+
+    def sendColor(
+        self, rgb: Tuple[int, int, int], brightness: int = 100, zones: List[str] = None
+    ) -> None:
+        self.connect()
+        with self._lock:
+            super().sendColor(rgb, brightness, zones)
