@@ -76,7 +76,9 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
         self._attr_is_on = state[0] == 1
         self._attr_effect = state[1]
         self._attr_rgb_color = state[2]
-        self._attr_brightness = state[3]
+        self._attr_brightness = (
+            int(state[3] / 100 * 255) if state[3] is not None else None
+        )
 
         _LOGGER.debug(
             "Updated state for %s (state: %s, effect: %s, rgb: %s, brightness: %s)",
@@ -93,10 +95,11 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
         effect = kwargs.get(ATTR_EFFECT)
         rgb = kwargs.get(ATTR_RGB_COLOR)
         brightness = kwargs.get(ATTR_BRIGHTNESS)
-        if rgb or brightness:
-            brightness = int(brightness / 255) if brightness else 100
-            if not rgb:
-                rgb = (255, 255, 255)
+        if rgb is not None or brightness is not None:
+            brightness = int(brightness / 255 * 100) if brightness is not None else 100
+            if rgb is None:
+                rgb = self._attr_rgb_color or (255, 255, 255)
+
         _LOGGER.debug(
             "Turning on %s (effect: %s, color: %s, brightness: %s)",
             self.zone,
