@@ -99,12 +99,10 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
             await self.api.async_play_pattern(self._attr_effect, [self.zone])
         else:
             await self.api.async_turn_on([self.zone])
-        self._attr_is_on = True
         await self.async_refresh_data()
 
     async def async_turn_off(self, **kwargs):  # pylint: disable=unused-argument
         """Turn off the light."""
         _LOGGER.debug("In async_turn_off for '%s'. kwargs is %s", self.zone, kwargs)
         await self.api.async_turn_off([self.zone])
-        self._attr_is_on = False
         await self.async_refresh_data()
