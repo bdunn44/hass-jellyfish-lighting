@@ -79,14 +79,12 @@ class JellyfishLightingDataUpdateCoordinator(DataUpdateCoordinator):
 
     def __init__(self, hass: HomeAssistant, client: JellyfishLightingApiClient) -> None:
         """Initialize."""
-        _LOGGER.debug("in data coordinator __init__")
         self.api = client
         self.platforms = []
         super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)
 
     async def _async_update_data(self):
         """Update data via library."""
-        _LOGGER.debug("in data coordinator async_update_data")
         try:
             return await self.api.async_get_data()
         except Exception as exception:
