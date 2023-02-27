@@ -13,11 +13,11 @@ This component is designed to integrate with [JellyFish Lighting][jellyfish-ligh
 <div style="display:flex">
     <div style="margin-right:20px">
         <p style="font-weight:bold;text-align:center">Light Entities for Multiple Zones</p>
-        <img src="https://raw.githubusercontent.com/bdunn44/hass-jellyfish-lighting/master/.github/images/example_zones.png" alt="Example Zone Entities" height="300px"/>
+        <img src="https://raw.githubusercontent.com/bdunn44/hass-jellyfish-lighting/master/.github/images/example_zones.png" alt="Example Zone Entities" style="max-height:300px"/>
     </div>
     <div>
         <p style="font-weight:bold;text-align:center">Playing a Pre-Saved Pattern</p>
-        <img src="https://raw.githubusercontent.com/bdunn44/hass-jellyfish-lighting/master/.github/images/example_play_pattern.png" alt="Example of Playing a Pre-Saved Pattern" height="300px"/>
+        <img src="https://raw.githubusercontent.com/bdunn44/hass-jellyfish-lighting/master/.github/images/example_play_pattern.png" alt="Example of Playing a Pre-Saved Pattern" style="max-height:300px"/>
     </div>
 </div>
 
@@ -31,9 +31,7 @@ This is an unofficial integration that has not been developed or endorsed by Jel
 
 ## Configuration is done in the UI
 
-_**Note:** I am working to get this integration added to the default HACS library. Stay tuned!_
-
-_**Also Note:** it is highly recommended to set a static IP for your controller if you haven't already!_
+_**Note:** it is highly recommended to set a static IP for your controller if you haven't already!_
 
 ## Trademark Legal Notices
 
@@ -50,8 +48,8 @@ do not imply endorsement.
 [commits]: https://github.com/bdunn44/hass-jellyfish-lighting/commits/master
 [releases]: https://github.com/bdunn44/hass-jellyfish-lighting/releases
 [downloads-badge]: https://img.shields.io/github/downloads/bdunn44/hass-jellyfish-lighting/total?style=flat-square
-[hacs]: https://hacs.xyz/docs/faq/custom_repositories/
-[hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange?style=flat-square
+[hacs]: https://github.com/hacs/integration
+[hacsbadge]: https://img.shields.io/badge/hacs-default-orange.svg?style=flat-square
 [forum-badge]: https://img.shields.io/badge/community-forum-yellow.svg?style=flat-square
 [forum]: https://community.home-assistant.io/
 [license-badge]: https://img.shields.io/github/license/bdunn44/hass-jellyfish-lighting?style=flat-square
