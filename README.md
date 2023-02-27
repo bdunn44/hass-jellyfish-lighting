@@ -12,23 +12,27 @@ This component is designed to integrate with [JellyFish Lighting][jellyfish-ligh
 
 | Light Entities for Mulitple Zones | Playing a Pre-Saved Pattern |
 | :-------------------------------: | :-------------------------: |
-|<img src=".github/images/example_zones.png" alt="Example Zone Entities" height="300px"/>|<img src=".github/images/example_play_pattern.png" alt="Example of Playing a Pre-Saved Pattern" height="300px"/>|
+|<img src=".github/images/example_zones.png" alt="Example Zone Entities" style="max-height:300px"/>|<img src=".github/images/example_play_pattern.png" alt="Example of Playing a Pre-Saved Pattern" style="max-height:300px"/>|
 
 This is an unofficial integration that has not been developed or endorsed by JellyFish Lighting.
+
+## Installation the easy way
+
+If you've already installed HACS (https://hacs.xyz/), simply click this button!
+
+[![Open your Home Assistant instance and open the hass-jellyfish-lighting repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=bdunn44&repository=hass-jellyfish-lighting&category=integration)
 
 ## Installation via HACS
 
 1. Install HACS in your Home Assisstant installation (see https://hacs.xyz/ for detailed instructions)
 1. Navigate to HACS within your Home Assistant instance (Menu > HACS)
 1. Select "Integrations"
-1. In the upper-right hand corner, click the 3-dot menu button and select "Custom Repositories"
-1. Paste the link to this repo (https://github.com/bdunn44/hass-jellyfish-lighting) into the "Repository" field, select "Integration" for the category, and click "Add"
 1. Search for the "JellyFish Lighting" integration, open it, and click "Download"
 1. Restart Home Assistant
 1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "JellyFish Lighting"
 1. Enter the host/IP of your JellyFish Controller.
 
-_**Note:** I am working to get this integration added to the default HACS library. Stay tuned!_
+_**Note:** it is highly recommended to set a static IP for your controller if you haven't already!_
 
 ## Manual Installation
 
@@ -58,8 +62,8 @@ do not imply endorsement.
 [commits]: https://github.com/bdunn44/hass-jellyfish-lighting/commits/master
 [releases]: https://github.com/bdunn44/hass-jellyfish-lighting/releases
 [downloads-badge]: https://img.shields.io/github/downloads/bdunn44/hass-jellyfish-lighting/total?style=flat-square
-[hacs]: https://hacs.xyz/docs/faq/custom_repositories/
-[hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange?style=flat-square
+[hacs]: https://github.com/hacs/integration
+[hacsbadge]: https://img.shields.io/badge/hacs-default-orange.svg?style=flat-square
 [forum-badge]: https://img.shields.io/badge/community-forum-yellow.svg?style=flat-square
 [forum]: https://community.home-assistant.io/
 [license-badge]: https://img.shields.io/github/license/bdunn44/hass-jellyfish-lighting?style=flat-square

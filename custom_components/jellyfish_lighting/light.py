@@ -107,16 +107,16 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
             rgb,
             brightness,
         )
-        if effect is not None:
-            await self.api.async_play_pattern(effect, [self.zone])
-        elif rgb is not None:
+        if self._attr_effect is not None:
+            await self.api.async_play_pattern(self._attr_effect, self.zone)
+        elif self._attr_rgb_color is not None:
             await self.api.async_send_color(rgb, brightness, [self.zone])
         else:
-            await self.api.async_turn_on([self.zone])
+            await self.api.async_turn_on(self.zone)
         await self.async_refresh_data()
 
     async def async_turn_off(self, **kwargs):  # pylint: disable=unused-argument
         """Turn off the light."""
-        _LOGGER.debug("Turning off '%s'", self.zone)
-        await self.api.async_turn_off([self.zone])
+        _LOGGER.debug("In async_turn_off for '%s'. kwargs is %s", self.zone, kwargs)
+        await self.api.async_turn_off(self.zone)
         await self.async_refresh_data()
