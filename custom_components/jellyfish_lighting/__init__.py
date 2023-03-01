@@ -12,6 +12,8 @@ from homeassistant.helpers import device_registry as dr
 from .api import JellyfishLightingApiClient
 
 from .const import (
+    LOGGER,
+    SCAN_INTERVAL,
     CONF_HOST,
     DOMAIN,
     NAME,
@@ -19,10 +21,6 @@ from .const import (
     LIGHT,
     STARTUP_MESSAGE,
 )
-
-SCAN_INTERVAL = timedelta(seconds=15)
-
-_LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
 async def async_setup(
@@ -34,8 +32,8 @@ async def async_setup(
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Set up this integration using UI."""
-    _LOGGER.info("Setting up JellyFish Lighting integration")
-    _LOGGER.debug(
+    LOGGER.info("Setting up JellyFish Lighting integration")
+    LOGGER.debug(
         "async_setup_entry config entry is: %s",
         {
             "entry_id": entry.entry_id,
@@ -48,7 +46,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     entry.title = DEVICE
     if hass.data.get(DOMAIN) is None:
         hass.data.setdefault(DOMAIN, {})
-        _LOGGER.info(STARTUP_MESSAGE)
+        LOGGER.info(STARTUP_MESSAGE)
 
     host = entry.data.get(CONF_HOST)
     client = JellyfishLightingApiClient(host, entry, hass)
@@ -81,7 +79,7 @@ class JellyfishLightingDataUpdateCoordinator(DataUpdateCoordinator):
         """Initialize."""
         self.api = client
         self.platforms = []
-        super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)
+        super().__init__(hass, LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)
 
     async def _async_update_data(self):
         """Update data via library."""
@@ -93,7 +91,7 @@ class JellyfishLightingDataUpdateCoordinator(DataUpdateCoordinator):
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Handle removal of an entry."""
-    _LOGGER.info("Unloading JellyFish Lighting integration")
+    LOGGER.info("Unloading JellyFish Lighting integration")
     # coordinator = hass.data[DOMAIN][entry.entry_id]
     unloaded = await hass.config_entries.async_forward_entry_unload(entry, LIGHT)
     if unloaded:
@@ -103,6 +101,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload config entry."""
-    _LOGGER.info("Reloading JellyFish Lighting integration")
+    LOGGER.info("Reloading JellyFish Lighting integration")
     await async_unload_entry(hass, entry)
     await async_setup_entry(hass, entry)

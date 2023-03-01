@@ -1,15 +1,13 @@
 """Adds config flow for Blueprint."""
-import logging
 from homeassistant import config_entries
 from homeassistant.helpers.aiohttp_client import async_create_clientsession
 import voluptuous as vol
 from .api import JellyfishLightingApiClient
 from .const import (
+    LOGGER,
     CONF_HOST,
     DOMAIN,
 )
-
-_LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
 class JellyfishLightingFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -63,13 +61,13 @@ class JellyfishLightingFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     async def _test_connection(self, host):
         """Return true if host is valid."""
         try:
-            _LOGGER.info(
+            LOGGER.info(
                 "Testing connection to JellyFish Lighting controller at %s...", host
             )
             session = async_create_clientsession(self.hass)
             client = JellyfishLightingApiClient(host, session, self.hass)
             await client.async_get_data()
-            _LOGGER.info(
+            LOGGER.info(
                 "Successfully connected to JellyFish Lighting controller at %s!", host
             )
             return True

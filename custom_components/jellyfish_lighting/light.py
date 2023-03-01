@@ -11,11 +11,9 @@ from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
     ATTR_RGB_COLOR,
 )
-from .const import DOMAIN
+from .const import LOGGER, DOMAIN
 from . import JellyfishLightingDataUpdateCoordinator, JellyfishLightingApiClient
 from .entity import JellyfishLightingEntity
-
-_LOGGER: logging.Logger = logging.getLogger(__package__)
 
 
 async def async_setup_entry(hass, entry, async_add_devices):
@@ -80,7 +78,7 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
             int(state[3] / 100 * 255) if state[3] is not None else None
         )
 
-        _LOGGER.debug(
+        LOGGER.debug(
             "Updated state for %s (state: %s, effect: %s, rgb: %s, brightness: %s)",
             self.zone,
             "ON" if self._attr_is_on else "OFF",
@@ -100,7 +98,7 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
             if rgb is None:
                 rgb = self._attr_rgb_color or (255, 255, 255)
 
-        _LOGGER.debug(
+        LOGGER.debug(
             "Turning on %s (effect: %s, color: %s, brightness: %s)",
             self.zone,
             effect,
@@ -117,6 +115,6 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
 
     async def async_turn_off(self, **kwargs):  # pylint: disable=unused-argument
         """Turn off the light."""
-        _LOGGER.debug("In async_turn_off for '%s'. kwargs is %s", self.zone, kwargs)
+        LOGGER.debug("In async_turn_off for '%s'. kwargs is %s", self.zone, kwargs)
         await self.api.async_turn_off(self.zone)
         await self.async_refresh_data()
