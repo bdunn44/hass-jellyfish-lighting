@@ -22,6 +22,10 @@ LIGHT = "light"
 
 # Configuration and options
 CONF_HOST = "host"
+EFFECT_CUSTOM_SOLID = "Home Assistant/Custom Solid Color"
+DEFAULT_EFFECT = EFFECT_CUSTOM_SOLID
+DEFAULT_BRIGHTNESS = 100
+DEFAULT_COLOR = (255, 193, 7)
 
 STARTUP_MESSAGE = f"""
 -------------------------------------------------------------------
