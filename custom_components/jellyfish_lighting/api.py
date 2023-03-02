@@ -1,9 +1,9 @@
 """Sample API Client."""
-from .const import LOGGER
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 import jellyfishlightspy as jf
+from .const import LOGGER, EFFECT_CUSTOM_SOLID
 
 
 class JellyfishLightingApiClient:
@@ -17,9 +17,9 @@ class JellyfishLightingApiClient:
         self._config_entry = config_entry
         self._hass = hass
         self._controller = jf.JellyFishController(host, False)
-        self.zones = None
-        self.states = None
-        self.patterns = None
+        self.zones: List[str] = []
+        self.states: Dict[str, JellyFishLightingZoneData] = {}
+        self.patterns: List[str] = []
 
     async def connect(self):
         """Establish connection to the controller"""
@@ -32,7 +32,7 @@ class JellyfishLightingApiClient:
         except BaseException as ex:  # pylint: disable=broad-except
             msg = f"Failed to connect to JellyFish Lighting controller at {self.host}"
             LOGGER.exception(msg)
-            raise Exception(msg) from ex  # pylint: disable=broad-except
+            raise Exception(msg) from ex  # pylint: disable=broad-exception-raised
 
     async def async_get_data(self):
         """Get data from the API."""
@@ -45,6 +45,7 @@ class JellyfishLightingApiClient:
                 self._controller.getPatternList
             )
             self.patterns = [p.toFolderAndName() for p in patterns]
+            self.patterns.append(EFFECT_CUSTOM_SOLID)
             self.patterns.sort()
             LOGGER.debug("Patterns: %s", ", ".join(self.patterns))
 
@@ -60,15 +61,13 @@ class JellyfishLightingApiClient:
             LOGGER.debug("Zones: %s", ", ".join(self.zones))
 
             # Get the state of all zones
-            self.states = {}
             await self.async_get_zone_data()
-            LOGGER.debug("States: %s", self.states)
         except BaseException as ex:  # pylint: disable=broad-except
             msg = (
                 f"Failed to get data from JellyFish Lighting controller at {self.host}"
             )
             LOGGER.exception(msg)
-            raise Exception(msg) from ex  # pylint: disable=broad-except
+            raise Exception(msg) from ex  # pylint: disable=broad-exception-raised
 
     async def async_get_zone_data(self, zones: List[str] = None):
         """Retrieves and stores updated state data for one or more zones.
@@ -82,6 +81,9 @@ class JellyfishLightingApiClient:
             )
 
             for zone, state in states.items():
+                if zone not in self.states:
+                    self.states[zone] = JellyFishLightingZoneData()
+                data = self.states[zone]
                 if (
                     state.file == ""
                     and state.data
@@ -89,23 +91,21 @@ class JellyfishLightingApiClient:
                     and len(state.data.colors) == 3
                 ):
                     # state is solid RGB
-                    self.states[zone] = (
-                        state.state,
-                        None,
-                        tuple(state.data.colors),
-                        state.data.colorPos.brightness,
-                    )
+                    data.state = state.state
+                    data.file = None
+                    data.color = tuple(state.data.colors)
+                    data.brightness = state.data.colorPos.brightness
                 else:
-                    self.states[zone] = (
-                        state.state,
-                        state.file if state.file != "" else None,
-                        None,
-                        None,
-                    )
+                    data.state = state.state
+                    data.file = state.file if state.file != "" else None
+                    data.color = None
+                    data.brightness = None
+
+                LOGGER.debug("%s: (%s)", zone, data)
         except BaseException as ex:  # pylint: disable=broad-except
             msg = f"Failed to get zone data for [{', '.join(zones)}] from JellyFish Lighting controller at {self.host}"
             LOGGER.exception(msg)
-            raise Exception(msg) from ex  # pylint: disable=broad-except
+            raise Exception(msg) from ex  # pylint: disable=broad-exception-raised
 
     async def async_turn_on(self, zone: str):
         """Turn one or more zones on. Affects all zones if zone list is None"""
@@ -116,7 +116,7 @@ class JellyfishLightingApiClient:
         except BaseException as ex:  # pylint: disable=broad-except
             msg = f"Failed to turn on JellyFish Lighting zone '{zone}'"
             LOGGER.exception(msg)
-            raise Exception(msg) from ex  # pylint: disable=broad-except
+            raise Exception(msg) from ex  # pylint: disable=broad-exception-raised
 
     async def async_turn_off(self, zone: str):
         """Turn one or more zones off. Affects all zones if zone list is None"""
@@ -127,7 +127,7 @@ class JellyfishLightingApiClient:
         except BaseException as ex:  # pylint: disable=broad-except
             msg = f"Failed to turn off JellyFish Lighting zone '{zone}'"
             LOGGER.exception(msg)
-            raise Exception(msg) from ex  # pylint: disable=broad-except
+            raise Exception(msg) from ex  # pylint: disable=broad-exception-raised
 
     async def async_play_pattern(self, pattern: str, zone: str):
         """Turn one or more zones on and applies a preset pattern. Affects all zones if zone list is None"""
@@ -140,7 +140,7 @@ class JellyfishLightingApiClient:
         except BaseException as ex:  # pylint: disable=broad-except
             msg = f"Failed to play pattern '{pattern}' on JellyFish Lighting zone '{zone}'"
             LOGGER.exception(msg)
-            raise Exception(msg) from ex  # pylint: disable=broad-except
+            raise Exception(msg) from ex  # pylint: disable=broad-exception-raised
 
     async def async_send_color(
         self, rgb: Tuple[int, int, int], brightness: int, zone: str
@@ -160,4 +160,23 @@ class JellyfishLightingApiClient:
         except BaseException as ex:  # pylint: disable=broad-except
             msg = f"Failed to play color '{rgb}' at {brightness}% brightness on JellyFish Lighting zone '{zone}'"
             LOGGER.exception(msg)
-            raise Exception(msg) from ex  # pylint: disable=broad-except
+            raise Exception(msg) from ex  # pylint: disable=broad-exception-raised
+
+
+class JellyFishLightingZoneData:
+    """Simple class to store the state of a JellyFish Lighting zone"""
+
+    def __init__(
+        self,
+        state: bool = None,
+        file: str = None,
+        color: tuple[int, int, int] = None,
+        brightness: int = None,
+    ):
+        self.state = state
+        self.file = file
+        self.color = color
+        self.brightness = brightness
+
+    def __str__(self) -> str:
+        return f"state: {self.state}, file: {self.file}, color: {self.color}, brightness: {self.brightness}"
