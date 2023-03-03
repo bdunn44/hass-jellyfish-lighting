@@ -8,18 +8,9 @@
 [![Community Forum][forum-badge]][forum]
 [![BuyMeCoffee][buymecoffee-badge]][buymecoffee]
 
-This component is designed to integrate with [JellyFish Lighting][jellyfish-lighting] installations. It currently supports turning lights on & off and playing pre-saved patterns. If your installation includes more than one zone you can control each zone individually.
+This component is designed to integrate with [JellyFish Lighting][jellyfish-lighting] installations. It currently supports turning lights on & off, setting solid colors with brightness control, and playing pre-saved patterns. If your installation includes more than one zone you can control each zone individually.
 
-<div style="display:flex">
-    <div style="margin-right:20px">
-        <p style="font-weight:bold;text-align:center">Light Entities for Multiple Zones</p>
-        <img src="https://raw.githubusercontent.com/bdunn44/hass-jellyfish-lighting/master/.github/images/example_zones.png" alt="Example Zone Entities" style="max-height:300px"/>
-    </div>
-    <div>
-        <p style="font-weight:bold;text-align:center">Playing a Pre-Saved Pattern</p>
-        <img src="https://raw.githubusercontent.com/bdunn44/hass-jellyfish-lighting/master/.github/images/example_play_pattern.png" alt="Example of Playing a Pre-Saved Pattern" style="max-height:300px"/>
-    </div>
-</div>
+<img src="https://raw.githubusercontent.com/bdunn44/hass-jellyfish-lighting/master/.github/images/combined.png" alt="Screenshots of JellyFish Lighting integration for Home Assistant" style="max-width:600px"/>
 
 This is an unofficial integration that has not been developed or endorsed by JellyFish Lighting.
 
@@ -29,7 +20,7 @@ This is an unofficial integration that has not been developed or endorsed by Jel
 1. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "JellyFish Lighting".
 1. Enter the host/IP of your Jellyfish Controller.
 
-## Configuration is done in the UI
+### Configuration is done in the UI
 
 _**Note:** it is highly recommended to set a static IP for your controller if you haven't already!_
 

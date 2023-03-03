@@ -1,4 +1,5 @@
 """Sample API Client."""
+import asyncio
 from typing import List, Tuple, Dict
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
@@ -21,14 +22,17 @@ class JellyfishLightingApiClient:
         self.states: Dict[str, JellyFishLightingZoneData] = {}
         self.patterns: List[str] = []
 
-    async def connect(self):
+    async def async_connect(self):
         """Establish connection to the controller"""
         try:
             if not self._controller.connected:
                 LOGGER.debug(
                     "Connecting to the JellyFish Lighting controller at %s", self.host
                 )
-                await self._hass.async_add_executor_job(self._controller.connect)
+                await asyncio.wait_for(
+                    self._hass.async_add_executor_job(self._controller.connect),
+                    timeout=5,
+                )
         except BaseException as ex:  # pylint: disable=broad-except
             msg = f"Failed to connect to JellyFish Lighting controller at {self.host}"
             LOGGER.exception(msg)
@@ -36,7 +40,7 @@ class JellyfishLightingApiClient:
 
     async def async_get_data(self):
         """Get data from the API."""
-        await self.connect()
+        await self.async_connect()
         try:
             LOGGER.debug("Getting refreshed data for JellyFish Lighting")
 
@@ -72,7 +76,7 @@ class JellyfishLightingApiClient:
     async def async_get_zone_data(self, zones: List[str] = None):
         """Retrieves and stores updated state data for one or more zones.
         Retrieves data for all zones if zone list is None"""
-        await self.connect()
+        await self.async_connect()
         try:
             LOGGER.debug("Getting data for zone(s) %s", zones or "[all zones]")
             zones = list(set(zones or self.zones))
@@ -109,7 +113,7 @@ class JellyfishLightingApiClient:
 
     async def async_turn_on(self, zone: str):
         """Turn one or more zones on. Affects all zones if zone list is None"""
-        await self.connect()
+        await self.async_connect()
         try:
             LOGGER.debug("Turning on zone %s", zone)
             await self._hass.async_add_executor_job(self._controller.turnOn, [zone])
@@ -120,7 +124,7 @@ class JellyfishLightingApiClient:
 
     async def async_turn_off(self, zone: str):
         """Turn one or more zones off. Affects all zones if zone list is None"""
-        await self.connect()
+        await self.async_connect()
         try:
             LOGGER.debug("Turning off zone %s", zone)
             await self._hass.async_add_executor_job(self._controller.turnOff, [zone])
@@ -131,7 +135,7 @@ class JellyfishLightingApiClient:
 
     async def async_play_pattern(self, pattern: str, zone: str):
         """Turn one or more zones on and applies a preset pattern. Affects all zones if zone list is None"""
-        await self.connect()
+        await self.async_connect()
         try:
             LOGGER.debug("Playing pattern '%s' on zone %s", pattern, zone)
             await self._hass.async_add_executor_job(
@@ -146,7 +150,7 @@ class JellyfishLightingApiClient:
         self, rgb: Tuple[int, int, int], brightness: int, zone: str
     ):
         """Turn one or more zones on and applies a preset pattern. Affects all zones if zone list is None"""
-        await self.connect()
+        await self.async_connect()
         try:
             LOGGER.debug(
                 "Playing color %s at %s brightness to zone(s) %s",

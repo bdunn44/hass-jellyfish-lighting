@@ -1,7 +1,6 @@
 """Switch platform for jellyfish-lighting."""
 import re
 from typing import Any
-from homeassistant.core import callback
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.components.light import (
     LightEntity,
@@ -112,11 +111,6 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
         rgb = kwargs.get(ATTR_RGB_COLOR)
         brightness = kwargs.get(ATTR_BRIGHTNESS)
 
-        if rgb or brightness or effect == EFFECT_CUSTOM_SOLID:
-            # Fill in the blanks (kwargs only contains changed attributes)
-            brightness = int((brightness or self.brightness) / 255 * 100)
-            rgb = rgb or self.rgb_color
-
         LOGGER.debug(
             "Turning on %s (effect: %s, color: %s, brightness: %s)",
             self.zone,
@@ -124,7 +118,10 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
             rgb,
             brightness,
         )
-        if rgb:
+        if rgb or brightness or effect == EFFECT_CUSTOM_SOLID:
+            # Fill in the blanks (kwargs only contains changed attributes)
+            brightness = int((brightness or self.brightness) / 255 * 100)
+            rgb = rgb or self.rgb_color
             await self.api.async_send_color(rgb, brightness, [self.zone])
         elif effect:
             await self.api.async_play_pattern(effect, self.zone)
