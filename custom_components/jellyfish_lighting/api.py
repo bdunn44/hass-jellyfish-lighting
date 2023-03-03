@@ -134,7 +134,7 @@ class JellyfishLightingApiClient:
             raise Exception(msg) from ex  # pylint: disable=broad-exception-raised
 
     async def async_play_pattern(self, pattern: str, zone: str):
-        """Turn one or more zones on and applies a preset pattern. Affects all zones if zone list is None"""
+        """Turn one or more zones on and apply a preset pattern. Affects all zones if zone list is None"""
         await self.async_connect()
         try:
             LOGGER.debug("Playing pattern '%s' on zone %s", pattern, zone)
@@ -149,7 +149,8 @@ class JellyfishLightingApiClient:
     async def async_send_color(
         self, rgb: Tuple[int, int, int], brightness: int, zone: str
     ):
-        """Turn one or more zones on and applies a preset pattern. Affects all zones if zone list is None"""
+        """Turn one or more zones on and set all lights to a single color at the given brightness.
+        Affects all zones if zone list is None"""
         await self.async_connect()
         try:
             LOGGER.debug(
@@ -168,7 +169,7 @@ class JellyfishLightingApiClient:
 
 
 class JellyFishLightingZoneData:
-    """Simple class to store the state of a JellyFish Lighting zone"""
+    """Simple class to store the state of a zone"""
 
     def __init__(
         self,
