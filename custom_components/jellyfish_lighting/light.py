@@ -78,7 +78,7 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
     @property
     def is_on(self) -> bool:
         """Return the state of the light."""
-        return self.api.states[self.zone].state
+        return self.api.states[self.zone].state == 1
 
     @property
     def effect(self) -> str | None:
@@ -108,21 +108,21 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn on the zone."""
         effect = kwargs.get(ATTR_EFFECT)
-        rgb = kwargs.get(ATTR_RGB_COLOR)
+        rgb_color = kwargs.get(ATTR_RGB_COLOR)
         brightness = kwargs.get(ATTR_BRIGHTNESS)
 
         LOGGER.debug(
             "Turning on %s (effect: %s, color: %s, brightness: %s)",
             self.zone,
             effect,
-            rgb,
+            rgb_color,
             brightness,
         )
-        if rgb or brightness or effect == EFFECT_CUSTOM_SOLID:
+        if rgb_color or brightness or effect == EFFECT_CUSTOM_SOLID:
             # Fill in the blanks (kwargs only contains changed attributes)
             brightness = int((brightness or self.brightness) / 255 * 100)
-            rgb = rgb or self.rgb_color
-            await self.api.async_send_color(rgb, brightness, [self.zone])
+            rgb_color = rgb_color or self.rgb_color
+            await self.api.async_send_color(rgb_color, brightness, [self.zone])
         elif effect:
             await self.api.async_play_pattern(effect, self.zone)
         else:
