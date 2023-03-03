@@ -8,21 +8,19 @@
 [![Community Forum][forum-badge]][forum]
 [![BuyMeCoffee][buymecoffee-badge]][buymecoffee]
 
-This component is designed to integrate with [JellyFish Lighting][jellyfish-lighting] installations. It currently supports turning lights on & off and playing pre-saved patterns. If your installation includes more than one zone you can control each zone individually.
+This component is designed to integrate with [JellyFish Lighting][jellyfish-lighting] installations. It currently supports turning lights on & off, setting solid colors with brightness control, and playing pre-saved patterns. If your installation includes more than one zone you can control each zone individually.
 
-| Light Entities for Mulitple Zones | Playing a Pre-Saved Pattern |
-| :-------------------------------: | :-------------------------: |
-|<img src=".github/images/example_zones.png" alt="Example Zone Entities" style="max-height:300px"/>|<img src=".github/images/example_play_pattern.png" alt="Example of Playing a Pre-Saved Pattern" style="max-height:300px"/>|
+<img src=".github/images/combined.png" alt="Screenshots of JellyFish Lighting integration for Home Assistant" style="max-width:600px"/>
 
 This is an unofficial integration that has not been developed or endorsed by JellyFish Lighting.
 
-## Installation the easy way
+## Installation (the easy way)
 
 If you've already installed HACS (https://hacs.xyz/), simply click this button!
 
 [![Open your Home Assistant instance and open the hass-jellyfish-lighting repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=bdunn44&repository=hass-jellyfish-lighting&category=integration)
 
-## Installation via HACS
+## Installation (via HACS)
 
 1. Install HACS in your Home Assisstant installation (see https://hacs.xyz/ for detailed instructions)
 1. Navigate to HACS within your Home Assistant instance (Menu > HACS)

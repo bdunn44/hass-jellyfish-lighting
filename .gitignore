@@ -9,6 +9,7 @@ __pycache__
 .coverage
 .vscode
 coverage.xml
+*.code-workspace
 
 # Home Assistant files
 .cloud
