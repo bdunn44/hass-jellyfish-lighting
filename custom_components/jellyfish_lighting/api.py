@@ -4,7 +4,7 @@ from typing import List, Tuple, Dict
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 import jellyfishlightspy as jf
-from .const import LOGGER, EFFECT_CUSTOM_SOLID
+from .const import LOGGER
 
 
 class JellyfishLightingApiClient:
@@ -49,7 +49,6 @@ class JellyfishLightingApiClient:
                 self._controller.getPatternList
             )
             self.patterns = [p.toFolderAndName() for p in patterns]
-            self.patterns.append(EFFECT_CUSTOM_SOLID)
             self.patterns.sort()
             LOGGER.debug("Patterns: %s", ", ".join(self.patterns))
 
