@@ -13,8 +13,6 @@ from homeassistant.components.light import (
 from .const import (
     LOGGER,
     DOMAIN,
-    EFFECT_CUSTOM_SOLID,
-    DEFAULT_EFFECT,
     DEFAULT_BRIGHTNESS,
     DEFAULT_COLOR,
 )
@@ -83,7 +81,7 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
     @property
     def effect(self) -> str | None:
         """Return the current effect of the light."""
-        return self.api.states[self.zone].file or DEFAULT_EFFECT
+        return self.api.states[self.zone].file
 
     @property
     def rgb_color(self) -> tuple[int, int, int] | None:
@@ -118,13 +116,13 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
             rgb_color,
             brightness,
         )
-        if rgb_color or brightness or effect == EFFECT_CUSTOM_SOLID:
+        if effect:
+            await self.api.async_play_pattern(effect, self.zone)
+        elif rgb_color or brightness:
             # Fill in the blanks (kwargs only contains changed attributes)
             brightness = int((brightness or self.brightness) / 255 * 100)
             rgb_color = rgb_color or self.rgb_color
             await self.api.async_send_color(rgb_color, brightness, [self.zone])
-        elif effect:
-            await self.api.async_play_pattern(effect, self.zone)
         else:
             await self.api.async_turn_on(self.zone)
         await self.async_refresh_data()

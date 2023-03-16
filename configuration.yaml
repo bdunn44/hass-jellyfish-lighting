@@ -9,3 +9,5 @@ logger:
 debugpy:
   start: true
   wait: false
+
+scene: !include scenes.yaml
