@@ -11,28 +11,48 @@ class JellyfishLightingApiClient:
     """API Client for JellyFish Lighting"""
 
     def __init__(
-        self, host: str, config_entry: ConfigEntry, hass: HomeAssistant
+        self, address: str, config_entry: ConfigEntry, hass: HomeAssistant
     ) -> None:
         """Initialize API client."""
-        self.host = host
+        self.address = address
         self._config_entry = config_entry
         self._hass = hass
-        self._controller = JellyFishController(host)
+        self._controller = JellyFishController(address)
         self.zones: List[str] = []
         self.states: Dict[str, JellyFishLightingZoneData] = {}
         self.patterns: List[str] = []
+        self.name: str = None
+        self.hostname: str = None
+        self.version: str = None
 
     async def async_connect(self):
         """Establish connection to the controller"""
+        if self._controller.connected:
+            return
         try:
-            if not self._controller.connected:
-                LOGGER.debug(
-                    "Connecting to the JellyFish Lighting controller at %s", self.host
-                )
-                await self._hass.async_add_executor_job(self._controller.connect, 5)
+            LOGGER.debug(
+                "Connecting to the JellyFish Lighting controller at %s",
+                self.address,
+            )
+            await self._hass.async_add_executor_job(self._controller.connect, 5)
         except JellyFishException as ex:
             raise HomeAssistantError(
-                f"Failed to connect to JellyFish Lighting controller at {self.host}"
+                f"Failed to connect to JellyFish Lighting controller at {self.address}"
+            ) from ex
+
+    async def async_disconnect(self):
+        """Disconnects from the controller"""
+        if not self._controller.connected:
+            return
+        try:
+            LOGGER.debug(
+                "Disconnecting from the JellyFish Lighting controller at %s",
+                self.address,
+            )
+            await self._hass.async_add_executor_job(self._controller.disconnect, 5)
+        except JellyFishException as ex:
+            raise HomeAssistantError(
+                f"Failed to disconnect from JellyFish Lighting controller at {self.address}"
             ) from ex
 
     async def async_get_data(self):
@@ -40,6 +60,15 @@ class JellyfishLightingApiClient:
         await self.async_connect()
         try:
             LOGGER.debug("Getting refreshed data from JellyFish Lighting controller")
+
+            # Get controller configuration
+            await self.async_get_controller_info()
+            LOGGER.debug(
+                "Hostname: %s, Name: %s, Version: %s",
+                self.hostname,
+                self.name,
+                self.version,
+            )
 
             # Get patterns
             patterns = await self._hass.async_add_executor_job(
@@ -66,17 +95,36 @@ class JellyfishLightingApiClient:
             await self.async_get_zone_states()
         except JellyFishException as ex:
             raise HomeAssistantError(
-                f"Failed to get data from JellyFish Lighting controller at {self.host}"
+                f"Failed to get data from JellyFish Lighting controller at {self.address}"
             ) from ex
 
-    async def async_get_zone_states(self, zones: List[str] = None):
+    async def async_get_controller_info(self):
+        """Retrieves basic information from the controller"""
+        try:
+            self.name = await self._hass.async_add_executor_job(
+                self._controller.get_name
+            )
+            self.hostname = await self._hass.async_add_executor_job(
+                self._controller.get_hostname
+            )
+            version = await self._hass.async_add_executor_job(
+                self._controller.get_firmware_version
+            )
+            self.version = version.ver
+        except JellyFishException as ex:
+            raise HomeAssistantError(
+                f"Failed to retrieve JellyFish controller information from {self.address}"
+            ) from ex
+
+    async def async_get_zone_states(self, zone: str = None):
         """Retrieves and stores updated state data for one or more zones.
         Retrieves data for all zones if zone list is None"""
         await self.async_connect()
         try:
+            zones = [zone] if zone else self.zones
             LOGGER.debug("Getting data for zone(s) %s", zones or "[all zones]")
             states = await self._hass.async_add_executor_job(
-                self._controller.get_zone_states, zones or self.zones
+                self._controller.get_zone_states, zones
             )
             for zone, state in states.items():
                 data = JellyFishLightingZoneData.from_zone_state(state)
@@ -84,7 +132,7 @@ class JellyfishLightingApiClient:
                 LOGGER.debug("%s: %s", zone, data)
         except JellyFishException as ex:
             raise HomeAssistantError(
-                f"Failed to get zone data for [{', '.join(zones)}] from JellyFish Lighting controller at {self.host}"
+                f"Failed to get zone data for [{', '.join(zones)}] from JellyFish Lighting controller at {self.address}"
             ) from ex
 
     async def async_turn_on(self, zone: str):
@@ -113,13 +161,13 @@ class JellyfishLightingApiClient:
         """Turn one or more zones on and apply a preset pattern. Affects all zones if zone list is None"""
         await self.async_connect()
         try:
-            LOGGER.debug("Playing pattern '%s' on zone %s", pattern, zone)
+            LOGGER.debug("Applying pattern '%s' to zone %s", pattern, zone)
             await self._hass.async_add_executor_job(
                 self._controller.apply_pattern, pattern, [zone]
             )
         except JellyFishException as ex:
             raise HomeAssistantError(
-                f"Failed to play pattern '{pattern}' on JellyFish Lighting zone '{zone}'"
+                f"Failed to apply pattern '{pattern}' on JellyFish Lighting zone '{zone}'"
             ) from ex
 
     async def async_apply_color(
@@ -140,7 +188,7 @@ class JellyfishLightingApiClient:
             )
         except JellyFishException as ex:
             raise HomeAssistantError(
-                f"Failed to play color '{rgb}' at {brightness}% brightness on JellyFish Lighting zone '{zone}'"
+                f"Failed to apply color '{rgb}' at {brightness}% brightness on JellyFish Lighting zone '{zone}'"
             ) from ex
 
 

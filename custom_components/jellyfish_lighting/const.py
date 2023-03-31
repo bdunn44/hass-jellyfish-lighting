@@ -21,7 +21,10 @@ ICON = "mdi:home-lightbulb-outline"
 LIGHT = "light"
 
 # Configuration and options
-CONF_HOST = "host"
+CONF_ADDRESS = "host"
+CONF_NAME = "name"
+CONF_HOSTNAME = "hostname"
+CONF_VERSION = "version"
 DEFAULT_BRIGHTNESS = 100
 DEFAULT_COLOR = (255, 193, 7)
 

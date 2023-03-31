@@ -100,7 +100,7 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
 
     async def async_refresh_data(self):
         """Refresh data for this entity"""
-        await self.api.async_get_zone_states([self.zone])
+        await self.api.async_get_zone_states(self.zone)
         self._handle_coordinator_update()
 
     async def async_turn_on(self, **kwargs: Any) -> None:
