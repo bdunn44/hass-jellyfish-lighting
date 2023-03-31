@@ -65,7 +65,6 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
             self.api.states[self.zone]
         except KeyError:
             return False
-
         return super().available
 
     @property
@@ -76,7 +75,7 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
     @property
     def is_on(self) -> bool:
         """Return the state of the light."""
-        return self.api.states[self.zone].state == 1
+        return self.api.states[self.zone].is_on
 
     @property
     def effect(self) -> str | None:
@@ -90,8 +89,9 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
 
     @property
     def brightness(self) -> int | None:
-        """Return the brightness of this light between 1..255."""
+        """Return the brightness of this light between 0..255."""
         brightness = self.api.states[self.zone].brightness or DEFAULT_BRIGHTNESS
+        # JF API returns brightness as an int between 0 and 100
         return int(brightness / 100 * 255)
 
     async def async_added_to_hass(self) -> None:
@@ -100,7 +100,7 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
 
     async def async_refresh_data(self):
         """Refresh data for this entity"""
-        await self.api.async_get_zone_data([self.zone])
+        await self.api.async_get_zone_states([self.zone])
         self._handle_coordinator_update()
 
     async def async_turn_on(self, **kwargs: Any) -> None:
@@ -117,12 +117,13 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
             brightness,
         )
         if effect:
-            await self.api.async_play_pattern(effect, self.zone)
+            await self.api.async_apply_pattern(effect, self.zone)
         elif rgb_color or brightness:
             # Fill in the blanks (kwargs only contains changed attributes)
+            # Convert brightness back to a 0..100 value
             brightness = int((brightness or self.brightness) / 255 * 100)
             rgb_color = rgb_color or self.rgb_color
-            await self.api.async_send_color(rgb_color, brightness, [self.zone])
+            await self.api.async_apply_color(rgb_color, brightness, self.zone)
         else:
             await self.api.async_turn_on(self.zone)
         await self.async_refresh_data()

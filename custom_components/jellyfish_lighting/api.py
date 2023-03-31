@@ -1,9 +1,9 @@
 """Sample API Client."""
-import asyncio
 from typing import List, Tuple, Dict
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.config_entries import ConfigEntry
-import jellyfishlightspy as jf
+from jellyfishlightspy import JellyFishController, JellyFishException, ZoneState
 from .const import LOGGER
 
 
@@ -17,7 +17,7 @@ class JellyfishLightingApiClient:
         self.host = host
         self._config_entry = config_entry
         self._hass = hass
-        self._controller = jf.JellyFishController(host, False)
+        self._controller = JellyFishController(host)
         self.zones: List[str] = []
         self.states: Dict[str, JellyFishLightingZoneData] = {}
         self.patterns: List[str] = []
@@ -29,123 +29,100 @@ class JellyfishLightingApiClient:
                 LOGGER.debug(
                     "Connecting to the JellyFish Lighting controller at %s", self.host
                 )
-                await asyncio.wait_for(
-                    self._hass.async_add_executor_job(self._controller.connect),
-                    timeout=5,
-                )
-        except BaseException as ex:  # pylint: disable=broad-except
-            msg = f"Failed to connect to JellyFish Lighting controller at {self.host}"
-            LOGGER.exception(msg)
-            raise Exception(msg) from ex  # pylint: disable=broad-exception-raised
+                await self._hass.async_add_executor_job(self._controller.connect, 5)
+        except JellyFishException as ex:
+            raise HomeAssistantError(
+                f"Failed to connect to JellyFish Lighting controller at {self.host}"
+            ) from ex
 
     async def async_get_data(self):
         """Get data from the API."""
         await self.async_connect()
         try:
-            LOGGER.debug("Getting refreshed data for JellyFish Lighting")
+            LOGGER.debug("Getting refreshed data from JellyFish Lighting controller")
 
             # Get patterns
             patterns = await self._hass.async_add_executor_job(
-                self._controller.getPatternList
+                self._controller.get_pattern_names
             )
-            self.patterns = [p.toFolderAndName() for p in patterns]
-            self.patterns.sort()
+            patterns.sort()
+            self.patterns = patterns
             LOGGER.debug("Patterns: %s", ", ".join(self.patterns))
 
             # Get Zones
-            zones = await self._hass.async_add_executor_job(self._controller.getZones)
+            zones = await self._hass.async_add_executor_job(
+                self._controller.get_zone_names
+            )
 
             # Check if zones have changed
             if self.zones is not None and set(self.zones) != set(list(zones)):
                 # TODO: reload entities?
                 pass
 
-            self.zones = list(zones)
+            self.zones = zones
             LOGGER.debug("Zones: %s", ", ".join(self.zones))
 
             # Get the state of all zones
-            await self.async_get_zone_data()
-        except BaseException as ex:  # pylint: disable=broad-except
-            msg = (
+            await self.async_get_zone_states()
+        except JellyFishException as ex:
+            raise HomeAssistantError(
                 f"Failed to get data from JellyFish Lighting controller at {self.host}"
-            )
-            LOGGER.exception(msg)
-            raise Exception(msg) from ex  # pylint: disable=broad-exception-raised
+            ) from ex
 
-    async def async_get_zone_data(self, zones: List[str] = None):
+    async def async_get_zone_states(self, zones: List[str] = None):
         """Retrieves and stores updated state data for one or more zones.
         Retrieves data for all zones if zone list is None"""
         await self.async_connect()
         try:
             LOGGER.debug("Getting data for zone(s) %s", zones or "[all zones]")
-            zones = list(set(zones or self.zones))
             states = await self._hass.async_add_executor_job(
-                self._controller.getRunPatterns, zones
+                self._controller.get_zone_states, zones or self.zones
             )
-
             for zone, state in states.items():
-                if zone not in self.states:
-                    self.states[zone] = JellyFishLightingZoneData()
-                data = self.states[zone]
-                if (
-                    state.file == ""
-                    and state.data
-                    and state.data.numOfLeds == "Color"
-                    and len(state.data.colors) == 3
-                ):
-                    # state is solid RGB
-                    data.state = state.state
-                    data.file = None
-                    data.color = tuple(state.data.colors)
-                    data.brightness = state.data.colorPos.brightness
-                else:
-                    data.state = state.state
-                    data.file = state.file if state.file != "" else None
-                    data.color = None
-                    data.brightness = None
-
-                LOGGER.debug("%s: (%s)", zone, data)
-        except BaseException as ex:  # pylint: disable=broad-except
-            msg = f"Failed to get zone data for [{', '.join(zones)}] from JellyFish Lighting controller at {self.host}"
-            LOGGER.exception(msg)
-            raise Exception(msg) from ex  # pylint: disable=broad-exception-raised
+                data = JellyFishLightingZoneData.from_zone_state(state)
+                self.states[zone] = data
+                LOGGER.debug("%s: %s", zone, data)
+        except JellyFishException as ex:
+            raise HomeAssistantError(
+                f"Failed to get zone data for [{', '.join(zones)}] from JellyFish Lighting controller at {self.host}"
+            ) from ex
 
     async def async_turn_on(self, zone: str):
         """Turn one or more zones on. Affects all zones if zone list is None"""
         await self.async_connect()
         try:
             LOGGER.debug("Turning on zone %s", zone)
-            await self._hass.async_add_executor_job(self._controller.turnOn, [zone])
-        except BaseException as ex:  # pylint: disable=broad-except
-            msg = f"Failed to turn on JellyFish Lighting zone '{zone}'"
-            LOGGER.exception(msg)
-            raise Exception(msg) from ex  # pylint: disable=broad-exception-raised
+            await self._hass.async_add_executor_job(self._controller.turn_on, [zone])
+        except JellyFishException as ex:
+            raise HomeAssistantError(
+                f"Failed to turn on JellyFish Lighting zone '{zone}'"
+            ) from ex
 
     async def async_turn_off(self, zone: str):
         """Turn one or more zones off. Affects all zones if zone list is None"""
         await self.async_connect()
         try:
             LOGGER.debug("Turning off zone %s", zone)
-            await self._hass.async_add_executor_job(self._controller.turnOff, [zone])
-        except BaseException as ex:  # pylint: disable=broad-except
-            msg = f"Failed to turn off JellyFish Lighting zone '{zone}'"
-            LOGGER.exception(msg)
-            raise Exception(msg) from ex  # pylint: disable=broad-exception-raised
+            await self._hass.async_add_executor_job(self._controller.turn_off, [zone])
+        except JellyFishException as ex:
+            raise HomeAssistantError(
+                f"Failed to turn off JellyFish Lighting zone '{zone}'"
+            ) from ex
 
-    async def async_play_pattern(self, pattern: str, zone: str):
+    async def async_apply_pattern(self, pattern: str, zone: str):
         """Turn one or more zones on and apply a preset pattern. Affects all zones if zone list is None"""
         await self.async_connect()
         try:
             LOGGER.debug("Playing pattern '%s' on zone %s", pattern, zone)
             await self._hass.async_add_executor_job(
-                self._controller.playPattern, pattern, [zone]
+                self._controller.apply_pattern, pattern, [zone]
             )
-        except BaseException as ex:  # pylint: disable=broad-except
-            msg = f"Failed to play pattern '{pattern}' on JellyFish Lighting zone '{zone}'"
-            LOGGER.exception(msg)
-            raise Exception(msg) from ex  # pylint: disable=broad-exception-raised
+        except JellyFishException as ex:
+            raise HomeAssistantError(
+                f"Failed to play pattern '{pattern}' on JellyFish Lighting zone '{zone}'"
+            ) from ex
 
-    async def async_send_color(
+    async def async_apply_color(
         self, rgb: Tuple[int, int, int], brightness: int, zone: str
     ):
         """Turn one or more zones on and set all lights to a single color at the given brightness.
@@ -153,18 +130,18 @@ class JellyfishLightingApiClient:
         await self.async_connect()
         try:
             LOGGER.debug(
-                "Playing color %s at %s brightness to zone(s) %s",
+                "Applying color %s at %s brightness to zone %s",
                 rgb,
                 brightness,
                 zone,
             )
             await self._hass.async_add_executor_job(
-                self._controller.sendColor, rgb, brightness, zone
+                self._controller.apply_color, rgb, brightness, [zone]
             )
-        except BaseException as ex:  # pylint: disable=broad-except
-            msg = f"Failed to play color '{rgb}' at {brightness}% brightness on JellyFish Lighting zone '{zone}'"
-            LOGGER.exception(msg)
-            raise Exception(msg) from ex  # pylint: disable=broad-exception-raised
+        except JellyFishException as ex:
+            raise HomeAssistantError(
+                f"Failed to play color '{rgb}' at {brightness}% brightness on JellyFish Lighting zone '{zone}'"
+            ) from ex
 
 
 class JellyFishLightingZoneData:
@@ -172,15 +149,25 @@ class JellyFishLightingZoneData:
 
     def __init__(
         self,
-        state: bool = None,
+        is_on: bool = None,
         file: str = None,
         color: tuple[int, int, int] = None,
         brightness: int = None,
     ):
-        self.state = state
+        self.is_on = is_on
         self.file = file
         self.color = color
         self.brightness = brightness
 
-    def __str__(self) -> str:
-        return f"state: {self.state}, file: {self.file}, color: {self.color}, brightness: {self.brightness}"
+    @classmethod
+    def from_zone_state(cls, state: ZoneState):
+        """Instantiates the class from the data returned by the API"""
+        data = cls(state.is_on, state.file or None)
+        if state.data:
+            data.brightness = state.data.runData.brightness
+            if state.data.type == "Color" and len(state.data.colors) == 3:
+                data.color = tuple(state.data.colors)
+        return data
+
+    def __repr__(self) -> str:
+        return str(vars(self))
