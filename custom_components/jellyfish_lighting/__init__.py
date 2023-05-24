@@ -1,20 +1,18 @@
 """
 Custom integration to integrate JellyFish Lighting with Home Assistant.
 """
-from datetime import timedelta
-import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Config, HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import device_registry
 
 from .api import JellyfishLightingApiClient
 
 from .const import (
     LOGGER,
     SCAN_INTERVAL,
-    CONF_HOST,
+    CONF_ADDRESS,
     DOMAIN,
     NAME,
     DEVICE,
@@ -43,26 +41,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             "data": entry.data,
         },
     )
-    entry.title = DEVICE
     if hass.data.get(DOMAIN) is None:
         hass.data.setdefault(DOMAIN, {})
         LOGGER.info(STARTUP_MESSAGE)
 
-    host = entry.data.get(CONF_HOST)
-    client = JellyfishLightingApiClient(host, entry, hass)
+    address = entry.data.get(CONF_ADDRESS)
+    client = JellyfishLightingApiClient(address, entry, hass)
     coordinator = JellyfishLightingDataUpdateCoordinator(hass, client=client)
     await coordinator.async_refresh()
+    entry.title = f"{client.name} ({client.hostname})"
 
     if not coordinator.last_update_success:
         raise ConfigEntryNotReady
 
-    device_registry = dr.async_get(hass)
-    device_registry.async_get_or_create(
+    registry = device_registry.async_get(hass)
+    registry.async_get_or_create(
         config_entry_id=entry.entry_id,
-        identifiers={(DOMAIN, host)},
+        identifiers={(DOMAIN, client.hostname)},
+        name=client.name,
         manufacturer=NAME,
         model=DEVICE,
-        name=NAME,
+        sw_version=client.version,
     )
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
@@ -86,6 +85,7 @@ class JellyfishLightingDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             return await self.api.async_get_data()
         except Exception as exception:
+            LOGGER.exception("Error fetching %s data", DOMAIN)
             raise UpdateFailed() from exception
 
 
