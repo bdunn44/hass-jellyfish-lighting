@@ -1,6 +1,7 @@
 """
 Custom integration to integrate JellyFish Lighting with Home Assistant.
 """
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Config, HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
@@ -49,7 +50,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     client = JellyfishLightingApiClient(address, entry, hass)
     coordinator = JellyfishLightingDataUpdateCoordinator(hass, client=client)
     await coordinator.async_refresh()
-    entry.title = f"{client.name} ({client.hostname})"
+    hass.config_entries.async_update_entry(
+        entry, title=f"{client.name} ({client.hostname})"
+    )
 
     if not coordinator.last_update_success:
         raise ConfigEntryNotReady
