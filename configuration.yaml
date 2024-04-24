@@ -4,6 +4,7 @@ logger:
   default: info
   logs:
     custom_components.jellyfish_lighting: debug
+    jellyfishlightspy: debug
 
 # If you need to debug uncomment the lines below (doc: https://www.home-assistant.io/integrations/debugpy/)
 debugpy:

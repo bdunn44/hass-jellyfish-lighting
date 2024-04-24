@@ -1,4 +1,5 @@
 """Constants for jellyfish-lighting integration."""
+
 from datetime import timedelta
 import logging
 
