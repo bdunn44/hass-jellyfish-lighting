@@ -1,4 +1,4 @@
 pip>=21.0,<23.1
 colorlog
 homeassistant
-jellyfishlights-py==0.7.0
+jellyfishlights-py==0.8.0

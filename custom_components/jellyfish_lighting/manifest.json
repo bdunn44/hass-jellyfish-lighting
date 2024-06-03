@@ -10,7 +10,7 @@
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/bdunn44/hass-jellyfish-lighting/issues",
   "requirements": [
-    "git+https://github.com/bdunn44/jellyfishlights-py.git@push-listener#jellyfishlightspy==0.9.3"
+    "jellyfishlights-py==0.8.0"
   ],
   "version": "1.2.0"
 }
