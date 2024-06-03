@@ -1,10 +1,27 @@
 """Sample API Client."""
+
+import asyncio
 from typing import List, Tuple, Dict
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.config_entries import ConfigEntry
-from jellyfishlightspy import JellyFishController, JellyFishException, ZoneState
-from .const import LOGGER
+from homeassistant.helpers.update_coordinator import (
+    CoordinatorEntity,
+    DataUpdateCoordinator,
+)
+from jellyfishlightspy import (
+    JellyFishController,
+    JellyFishException,
+    ZoneState,
+    NAME_DATA,
+    HOSTNAME_DATA,
+    FIRMWARE_VERSION_DATA,
+    ZONE_CONFIG_DATA,
+    PATTERN_LIST_DATA,
+    PATTERN_CONFIG_DATA,
+    ZONE_STATE_DATA,
+)
+from .const import LOGGER, DOMAIN
 
 
 class JellyfishLightingApiClient:
@@ -24,6 +41,76 @@ class JellyfishLightingApiClient:
         self.name: str = None
         self.hostname: str = None
         self.version: str = None
+        self._controller.add_listener(
+            on_message=self._recieve_push, on_error=self._attempt_reconnect
+        )
+
+    @property
+    def _coord(self) -> DataUpdateCoordinator:
+        return self._hass.data[DOMAIN][self._config_entry.entry_id]
+
+    @property
+    def connected(self) -> bool:
+        """Indicates whether the client is connected to the controller"""
+        return self._controller.connected
+
+    def register_push_listener(self, entity: CoordinatorEntity) -> None:
+        """Adds a listener that is called when push events are received from the controller"""
+
+        def listener(*args):
+            async def update():
+                entity.schedule_update_ha_state(force_refresh=False)
+
+            asyncio.run_coroutine_threadsafe(update(), self._hass.loop)
+            # self._hass.async_create_task(update())
+            # self._hass.loop.create_task(entity.async_write_ha_state())
+            # self._hass.async_create_task(entity.async_write_ha_state)
+            # asyncio.run_coroutine_threadsafe(
+            #     entity.async_write_ha_state(), self._hass.loop
+            # )
+
+        self._controller.add_listener(
+            on_open=listener,
+            on_close=listener,
+            on_message=listener,
+            on_error=listener,
+        )
+
+    def _attempt_reconnect(self, *args) -> None:
+        """Attempts to reconnect to the controller"""
+        asyncio.run_coroutine_threadsafe(self.async_connect(), self._hass.loop)
+
+    def _recieve_push(self, data):
+        """Updates state data when a push event is received from the controller"""
+
+        async def update():
+            if NAME_DATA in data:
+                self.name = self._controller.name
+                LOGGER.debug("[PUSH UPDATE] Name: %s", self.name)
+            elif HOSTNAME_DATA in data:
+                self.hostname = self._controller.hostname
+                LOGGER.debug("[PUSH UPDATE] Hostname: %s", self.hostname)
+            elif FIRMWARE_VERSION_DATA in data:
+                self.version = self._controller.firmware_version.ver
+                LOGGER.debug("[PUSH UPDATE] Version: %s", self.version)
+            elif ZONE_CONFIG_DATA in data:
+                self.zones = self._controller.zone_names
+                LOGGER.debug("[PUSH UPDATE] Zones: %s", ", ".join(self.zones))
+            elif PATTERN_LIST_DATA in data or PATTERN_CONFIG_DATA in data:
+                patterns = self._controller.pattern_names
+                patterns.sort()
+                self.patterns = patterns
+                LOGGER.debug("[PUSH UPDATE] Patterns: %s", ", ".join(self.patterns))
+            elif ZONE_STATE_DATA in data:
+                for zone, state in self._controller.zone_states.items():
+                    if not state:
+                        continue
+                    state = JellyFishLightingZoneData.from_zone_state(state)
+                    self.states[zone] = state
+                    LOGGER.debug("[PUSH UPDATE] '%s' State: %s", zone, state)
+            self._coord.async_set_updated_data(data)
+
+        asyncio.run_coroutine_threadsafe(update(), self._hass.loop)
 
     async def async_connect(self):
         """Establish connection to the controller"""
@@ -56,42 +143,13 @@ class JellyfishLightingApiClient:
             ) from ex
 
     async def async_get_data(self):
-        """Get data from the API."""
+        """Manually fetches data from the controller."""
         await self.async_connect()
         try:
             LOGGER.debug("Getting refreshed data from JellyFish Lighting controller")
-
-            # Get controller configuration
             await self.async_get_controller_info()
-            LOGGER.debug(
-                "Hostname: %s, Name: %s, Version: %s",
-                self.hostname,
-                self.name,
-                self.version,
-            )
-
-            # Get patterns
-            patterns = await self._hass.async_add_executor_job(
-                self._controller.get_pattern_names
-            )
-            patterns.sort()
-            self.patterns = patterns
-            LOGGER.debug("Patterns: %s", ", ".join(self.patterns))
-
-            # Get Zones
-            zones = await self._hass.async_add_executor_job(
-                self._controller.get_zone_names
-            )
-
-            # Check if zones have changed
-            if self.zones is not None and set(self.zones) != set(list(zones)):
-                # TODO: reload entities?
-                pass
-
-            self.zones = zones
-            LOGGER.debug("Zones: %s", ", ".join(self.zones))
-
-            # Get the state of all zones
+            await self._hass.async_add_executor_job(self._controller.get_pattern_names)
+            await self._hass.async_add_executor_job(self._controller.get_zone_names)
             await self.async_get_zone_states()
         except JellyFishException as ex:
             raise HomeAssistantError(
@@ -101,16 +159,11 @@ class JellyfishLightingApiClient:
     async def async_get_controller_info(self):
         """Retrieves basic information from the controller"""
         try:
-            self.name = await self._hass.async_add_executor_job(
-                self._controller.get_name
-            )
-            self.hostname = await self._hass.async_add_executor_job(
-                self._controller.get_hostname
-            )
-            version = await self._hass.async_add_executor_job(
+            await self._hass.async_add_executor_job(self._controller.get_name)
+            await self._hass.async_add_executor_job(self._controller.get_hostname)
+            await self._hass.async_add_executor_job(
                 self._controller.get_firmware_version
             )
-            self.version = version.ver
         except JellyFishException as ex:
             raise HomeAssistantError(
                 f"Failed to retrieve JellyFish controller information from {self.address}"
@@ -123,13 +176,9 @@ class JellyfishLightingApiClient:
         try:
             zones = [zone] if zone else self.zones
             LOGGER.debug("Getting data for zone(s) %s", zones or "[all zones]")
-            states = await self._hass.async_add_executor_job(
+            await self._hass.async_add_executor_job(
                 self._controller.get_zone_states, zones
             )
-            for zone, state in states.items():
-                data = JellyFishLightingZoneData.from_zone_state(state)
-                self.states[zone] = data
-                LOGGER.debug("%s: %s", zone, data)
         except JellyFishException as ex:
             raise HomeAssistantError(
                 f"Failed to get zone data for [{', '.join(zones)}] from JellyFish Lighting controller at {self.address}"

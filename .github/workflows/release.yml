@@ -18,10 +18,10 @@ jobs:
       with:
         type: 'zip'
         directory: 'custom_components/jellyfish_lighting'
-        filename: 'jellyfish_lighting.zip'
+        filename: 'hass-jellyfish-lighting.zip'
     - uses: ncipollo/release-action@v1.12.0
       with:
-        artifacts: 'custom_components/jellyfish_lighting/jellyfish_lighting.zip'
+        artifacts: 'custom_components/jellyfish_lighting/hass-jellyfish-lighting.zip'
         draft: true
         generateReleaseNotes: true
         makeLatest: true

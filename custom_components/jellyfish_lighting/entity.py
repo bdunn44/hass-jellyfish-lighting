@@ -1,4 +1,5 @@
 """JellyfishLightingEntity class"""
+
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.entity import DeviceInfo
 
@@ -19,6 +20,10 @@ class JellyfishLightingEntity(CoordinatorEntity):
     def __init__(self, coordinator, config_entry):
         super().__init__(coordinator)
         self.config_entry = config_entry
+
+    # @property
+    # def should_poll(self) -> bool:
+    #     return False
 
     @property
     def device_info(self) -> DeviceInfo:

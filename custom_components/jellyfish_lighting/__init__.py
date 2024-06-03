@@ -1,6 +1,7 @@
 """
 Custom integration to integrate JellyFish Lighting with Home Assistant.
 """
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import Config, HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
@@ -49,7 +50,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     client = JellyfishLightingApiClient(address, entry, hass)
     coordinator = JellyfishLightingDataUpdateCoordinator(hass, client=client)
     await coordinator.async_refresh()
-    entry.title = f"{client.name} ({client.hostname})"
+    # try:
+    #     await client.async_get_data()
+    # except Exception as e:
+    #     LOGGER.exception("Error fetching %s data", DOMAIN)
+    #     raise ConfigEntryNotReady from e
+    hass.config_entries.async_update_entry(
+        entry, title=f"{client.name} ({client.hostname})"
+    )
 
     if not coordinator.last_update_success:
         raise ConfigEntryNotReady
@@ -65,7 +73,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     )
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
-    hass.async_add_job(hass.config_entries.async_forward_entry_setup(entry, LIGHT))
+    hass.async_create_task(hass.config_entries.async_forward_entry_setup(entry, LIGHT))
 
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
     return True
@@ -77,7 +85,7 @@ class JellyfishLightingDataUpdateCoordinator(DataUpdateCoordinator):
     def __init__(self, hass: HomeAssistant, client: JellyfishLightingApiClient) -> None:
         """Initialize."""
         self.api = client
-        self.platforms = []
+        self.platforms = [LIGHT]
         super().__init__(hass, LOGGER, name=DOMAIN, update_interval=SCAN_INTERVAL)
 
     async def _async_update_data(self):

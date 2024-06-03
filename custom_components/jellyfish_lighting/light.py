@@ -1,4 +1,5 @@
 """Switch platform for jellyfish-lighting."""
+
 import re
 from typing import Any
 from homeassistant.config_entries import ConfigEntry
@@ -20,14 +21,11 @@ from . import JellyfishLightingDataUpdateCoordinator, JellyfishLightingApiClient
 from .entity import JellyfishLightingEntity
 
 
-async def async_setup_entry(hass, entry, async_add_devices):
+async def async_setup_entry(hass, entry, async_add_entities):
     """Setup light platform"""
-    coordinator = hass.data[DOMAIN][entry.entry_id]
-    lights = [
-        JellyfishLightingLight(coordinator, entry, zone)
-        for zone in coordinator.api.zones
-    ]
-    async_add_devices(lights)
+    coord = hass.data[DOMAIN][entry.entry_id]
+    lights = [JellyfishLightingLight(coord, entry, zone) for zone in coord.api.zones]
+    async_add_entities(lights)
 
 
 class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
@@ -52,6 +50,7 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
         self._attr_name = zone
         self._attr_is_on = False
         self._attr_effect = None
+        self.api.register_push_listener(self)
         super().__init__(coordinator, entry)
 
     @property
@@ -65,7 +64,7 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
             self.api.states[self.zone]
         except KeyError:
             return False
-        return super().available
+        return self.api.connected
 
     @property
     def effect_list(self) -> list[str]:
