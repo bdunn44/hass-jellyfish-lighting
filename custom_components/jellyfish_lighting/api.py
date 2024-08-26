@@ -35,6 +35,7 @@ class JellyfishLightingApiClient:
         self._config_entry = config_entry
         self._hass = hass
         self._controller = JellyFishController(address)
+        self._connecting = asyncio.Lock()
         self.zones: List[str] = []
         self.states: Dict[str, JellyFishLightingZoneData] = {}
         self.patterns: List[str] = []
@@ -48,6 +49,11 @@ class JellyfishLightingApiClient:
     @property
     def _coord(self) -> DataUpdateCoordinator:
         return self._hass.data[DOMAIN][self._config_entry.entry_id]
+
+    @property
+    def connecting(self) -> bool:
+        """Indicates whether the client is currently attempting to connect to the controller"""
+        return self._connecting.locked()
 
     @property
     def connected(self) -> bool:
@@ -114,14 +120,15 @@ class JellyfishLightingApiClient:
 
     async def async_connect(self):
         """Establish connection to the controller"""
-        if self._controller.connected:
+        if self.connected or self.connecting:
             return
         try:
-            LOGGER.debug(
-                "Connecting to the JellyFish Lighting controller at %s",
-                self.address,
-            )
-            await self._hass.async_add_executor_job(self._controller.connect, 5)
+            async with self._connecting:
+                LOGGER.debug(
+                    "Connecting to the JellyFish Lighting controller at %s",
+                    self.address,
+                )
+                await self._hass.async_add_executor_job(self._controller.connect, 5)
         except JellyFishException as ex:
             raise HomeAssistantError(
                 f"Failed to connect to JellyFish Lighting controller at {self.address}"
@@ -129,14 +136,15 @@ class JellyfishLightingApiClient:
 
     async def async_disconnect(self):
         """Disconnects from the controller"""
-        if not self._controller.connected:
+        if not self.connected:
             return
         try:
-            LOGGER.debug(
-                "Disconnecting from the JellyFish Lighting controller at %s",
-                self.address,
-            )
-            await self._hass.async_add_executor_job(self._controller.disconnect, 5)
+            async with self._connecting:
+                LOGGER.debug(
+                    "Disconnecting from the JellyFish Lighting controller at %s",
+                    self.address,
+                )
+                await self._hass.async_add_executor_job(self._controller.disconnect, 5)
         except JellyFishException as ex:
             raise HomeAssistantError(
                 f"Failed to disconnect from JellyFish Lighting controller at {self.address}"
