@@ -52,7 +52,11 @@ class JellyfishLightingApiClient:
 
     @property
     def _coord(self) -> DataUpdateCoordinator:
-        return self._hass.data[DOMAIN][self._config_entry.entry_id]
+        # Returns None (rather than raising KeyError) if the coordinator has not
+        # been stored in hass.data yet. The controller floods push data on
+        # connect, which can fire _recieve_push before async_setup_entry has
+        # finished registering the coordinator.
+        return self._hass.data.get(DOMAIN, {}).get(self._config_entry.entry_id)
 
     @property
     def connecting(self) -> bool:
@@ -182,7 +186,9 @@ class JellyfishLightingApiClient:
                     state = JellyFishLightingZoneData.from_zone_state(state)
                     self.states[zone] = state
                     LOGGER.debug("[PUSH UPDATE] '%s' State: %s", zone, state)
-            self._coord.async_set_updated_data(data)
+            coord = self._coord
+            if coord is not None:
+                coord.async_set_updated_data(data)
 
         asyncio.run_coroutine_threadsafe(update(), self._hass.loop)
 
