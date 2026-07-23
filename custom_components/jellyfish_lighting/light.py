@@ -80,22 +80,26 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
     @property
     def is_on(self) -> bool:
         """Return the state of the light."""
-        return self.api.states[self.zone].is_on
+        state = self.api.states.get(self.zone)
+        return state.is_on if state else False
 
     @property
     def effect(self) -> str | None:
         """Return the current effect of the light."""
-        return self.api.states[self.zone].file
+        state = self.api.states.get(self.zone)
+        return state.file if state else None
 
     @property
     def rgb_color(self) -> tuple[int, int, int] | None:
         """Return the color value."""
-        return self.api.states[self.zone].color or DEFAULT_COLOR
+        state = self.api.states.get(self.zone)
+        return (state.color or DEFAULT_COLOR) if state else DEFAULT_COLOR
 
     @property
     def brightness(self) -> int | None:
         """Return the brightness of this light between 0..255."""
-        brightness = self.api.states[self.zone].brightness or DEFAULT_BRIGHTNESS
+        state = self.api.states.get(self.zone)
+        brightness = (state.brightness if state else None) or DEFAULT_BRIGHTNESS
         # JF API returns brightness as an int between 0 and 100
         return int(brightness / 100 * 255)
 
