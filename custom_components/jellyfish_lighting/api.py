@@ -37,6 +37,7 @@ class JellyfishLightingApiClient:
         self._controller = JellyFishController(address)
         self._connecting = asyncio.Lock()
         self._reconnecting = False
+        self._closing = False
         self.zones: List[str] = []
         self.states: Dict[str, JellyFishLightingZoneData] = {}
         self.patterns: List[str] = []
@@ -44,7 +45,9 @@ class JellyfishLightingApiClient:
         self.hostname: str = None
         self.version: str = None
         self._controller.add_listener(
-            on_message=self._recieve_push, on_error=self._attempt_reconnect
+            on_message=self._recieve_push,
+            on_error=self._attempt_reconnect,
+            on_close=self._attempt_reconnect,
         )
 
     @property
@@ -60,6 +63,11 @@ class JellyfishLightingApiClient:
     def connected(self) -> bool:
         """Indicates whether the client is connected to the controller"""
         return self._controller.connected
+
+    @property
+    def reconnecting(self) -> bool:
+        """Indicates whether a reconnect attempt is currently in progress"""
+        return self._reconnecting
 
     def register_push_listener(self, entity: CoordinatorEntity) -> None:
         """Adds a listener that is called when push events are received from the controller"""
@@ -84,11 +92,19 @@ class JellyfishLightingApiClient:
         )
 
     def _attempt_reconnect(self, *args) -> None:
-        """Attempts to reconnect to the controller"""
-        if self._reconnecting:
+        """Schedules a reconnect after an unexpected disconnect.
+
+        Wired to both on_error and on_close. The JellyFish controller closes
+        idle WebSocket connections cleanly (on_close, no error), which is why
+        entities silently went unavailable with nothing logged - the previous
+        code only reconnected on_error. Skip when the disconnect is our own
+        doing: an intentional disconnect, or the force-close that happens
+        inside a connect / reconnect already in progress.
+        """
+        if self._closing or self._reconnecting or self.connecting or self.connected:
             return
-        LOGGER.warning(
-            "JellyFish controller connection error, scheduling reconnect to %s",
+        LOGGER.debug(
+            "JellyFish controller at %s disconnected; scheduling reconnect",
             self.address,
         )
         self._reconnecting = True
@@ -172,6 +188,7 @@ class JellyfishLightingApiClient:
 
     async def async_connect(self):
         """Establish connection to the controller"""
+        self._closing = False
         if self.connected or self.connecting:
             return
         try:
@@ -193,6 +210,7 @@ class JellyfishLightingApiClient:
 
     async def async_disconnect(self):
         """Disconnects from the controller"""
+        self._closing = True
         if not self.connected:
             return
         try:

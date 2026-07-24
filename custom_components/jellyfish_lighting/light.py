@@ -59,12 +59,18 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
 
     @property
     def available(self) -> bool:
-        """Return True if entity is available."""
-        try:
-            self.api.states[self.zone]
-        except KeyError:
+        """Return True if entity is available.
+
+        The controller closes idle WebSocket connections cleanly, and we
+        reconnect automatically. Treat the entity as available while a
+        (re)connect is in flight so a routine idle-close does not flap the
+        light (and anything templated on it) to unavailable and back. It still
+        reports unavailable when the controller is genuinely gone - i.e. once
+        we are neither connected nor actively trying.
+        """
+        if self.api.states.get(self.zone) is None:
             return False
-        return self.api.connected
+        return self.api.connected or self.api.connecting or self.api.reconnecting
 
     @property
     def effect_list(self) -> list[str]:
