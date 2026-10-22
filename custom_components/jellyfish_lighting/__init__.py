@@ -99,8 +99,9 @@ class JellyfishLightingDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             return await self.api.async_get_data()
         except Exception as exception:
-            LOGGER.exception("Error fetching %s data", DOMAIN)
-            raise UpdateFailed() from exception
+            # The coordinator logs the first failure and the recovery, so an
+            # outage doesn't log a traceback on every poll
+            raise UpdateFailed(str(exception)) from exception
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

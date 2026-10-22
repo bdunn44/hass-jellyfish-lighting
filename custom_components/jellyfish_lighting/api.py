@@ -29,6 +29,14 @@ from .const import LOGGER, DOMAIN
 # before the connection is assumed dead and forcibly re-established
 MAX_MISSED_POLLS = 2
 
+# Failed reconnect attempts before entities are reported unavailable. A brief
+# blip shouldn't flap entities, but a controller that's gone shouldn't show
+# stale state indefinitely.
+MAX_FAILED_RECONNECTS = 2
+
+# Upper bound (seconds) for the exponential backoff between reconnect attempts
+MAX_RECONNECT_DELAY = 300
+
 
 class JellyfishLightingApiClient:
     """API Client for JellyFish Lighting"""
@@ -45,6 +53,7 @@ class JellyfishLightingApiClient:
         self._reconnecting = False
         self._closing = False
         self._missed_polls = 0
+        self._failed_reconnects = 0
         self._refresh_static = False
         self.zones: List[str] = []
         self.states: Dict[str, JellyFishLightingZoneData] = {}
@@ -77,9 +86,17 @@ class JellyfishLightingApiClient:
         return self._controller.connected
 
     @property
-    def reconnecting(self) -> bool:
-        """Indicates whether a reconnect attempt is currently in progress"""
-        return self._reconnecting
+    def available(self) -> bool:
+        """Indicates whether entities should be reported as available.
+
+        True while connected, or while a (re)connect is in progress and hasn't
+        yet failed repeatedly, so a routine idle-close doesn't flap entities.
+        """
+        if self.connected:
+            return True
+        return (
+            self.connecting or self._reconnecting
+        ) and self._failed_reconnects < MAX_FAILED_RECONNECTS
 
     def register_push_listener(self, entity: CoordinatorEntity) -> None:
         """Adds a listener that is called when push events are received from the controller"""
@@ -123,28 +140,53 @@ class JellyfishLightingApiClient:
         asyncio.run_coroutine_threadsafe(self._async_reconnect(), self._hass.loop)
 
     async def _async_reconnect(self):
-        """Force-close stale connection and reconnect.
+        """Force-close stale connection and reconnect, retrying with backoff.
 
         The JellyFish controller only accepts one WebSocket connection at a
         time. If the previous connection's TCP socket is still ESTABLISHED at
         the kernel level (stale), new connection attempts will time out
         indefinitely. We must tear down the old connection first.
+
+        Retries stay inside this loop (with _reconnecting set) so the
+        on_error/on_close callbacks fired by each failed attempt don't
+        schedule overlapping reconnects.
         """
         try:
-            LOGGER.debug(
-                "Force-closing stale connection to JellyFish controller at %s",
-                self.address,
-            )
-            await self._hass.async_add_executor_job(self._force_close_connection)
-            # Give the controller time to release the old session
-            await asyncio.sleep(2)
-            try:
-                await self.async_connect()
-            except HomeAssistantError:
-                LOGGER.warning(
-                    "Reconnect to JellyFish controller at %s failed, will retry on next poll",
+            while not self._closing:
+                LOGGER.debug(
+                    "Force-closing stale connection to JellyFish controller at %s",
                     self.address,
                 )
+                await self._hass.async_add_executor_job(self._force_close_connection)
+                # Give the controller time to release the old session
+                await asyncio.sleep(2)
+                failures = self._failed_reconnects
+                try:
+                    await self.async_connect()
+                except HomeAssistantError:
+                    self._failed_reconnects += 1
+                    delay = min(
+                        5 * 2 ** (self._failed_reconnects - 1), MAX_RECONNECT_DELAY
+                    )
+                    # Only the first failure is a warning; an outage shouldn't flood the log
+                    first = self._failed_reconnects == 1
+                    log = LOGGER.warning if first else LOGGER.debug
+                    log(
+                        "Reconnect to JellyFish controller at %s failed (attempt %s), "
+                        "retrying in %ss",
+                        self.address,
+                        self._failed_reconnects,
+                        delay,
+                    )
+                    await asyncio.sleep(delay)
+                    continue
+                if failures:
+                    LOGGER.warning(
+                        "Reconnected to JellyFish controller at %s after %s failed attempts",
+                        self.address,
+                        failures,
+                    )
+                break
         finally:
             self._reconnecting = False
 
@@ -262,6 +304,7 @@ class JellyfishLightingApiClient:
                 # The controller may have rebooted (e.g. a firmware update), so
                 # re-fetch its info and pattern list on the next poll
                 self._refresh_static = True
+                self._failed_reconnects = 0
         except JellyFishException as ex:
             raise HomeAssistantError(
                 f"Failed to connect to JellyFish Lighting controller at {self.address}"
@@ -295,6 +338,15 @@ class JellyfishLightingApiClient:
         still missing or after a (re)connect, treat timeouts as non-fatal, and
         let push keep them current.
         """
+        if self._reconnecting:
+            # The reconnect loop owns the connection until it succeeds. Only
+            # fail the poll once reconnecting has failed repeatedly, so a
+            # routine idle-close doesn't log an error.
+            if self._failed_reconnects < MAX_FAILED_RECONNECTS:
+                return
+            raise HomeAssistantError(
+                f"Unable to reconnect to JellyFish Lighting controller at {self.address}"
+            )
         await self.async_connect()
         refresh_static = self._refresh_static
         self._refresh_static = False
