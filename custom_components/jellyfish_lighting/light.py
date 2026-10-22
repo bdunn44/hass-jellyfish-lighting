@@ -21,6 +21,11 @@ from . import JellyfishLightingDataUpdateCoordinator, JellyfishLightingApiClient
 from .entity import JellyfishLightingEntity
 
 
+def _to_jf_brightness(brightness: int) -> int:
+    """Converts HA's 1..255 brightness to JellyFish's 1..100 scale"""
+    return max(1, round(brightness / 255 * 100))
+
+
 async def async_setup_entry(hass, entry, async_add_entities):
     """Setup light platform"""
     coord = hass.data[DOMAIN][entry.entry_id]
@@ -101,7 +106,7 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
         state = self.api.states.get(self.zone)
         brightness = (state.brightness if state else None) or DEFAULT_BRIGHTNESS
         # JF API returns brightness as an int between 0 and 100
-        return int(brightness / 100 * 255)
+        return round(brightness / 100 * 255)
 
     async def async_added_to_hass(self) -> None:
         self._handle_coordinator_update()
@@ -128,13 +133,13 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
         if effect:
             # Convert HA's 0..255 brightness to JellyFish's 0..100 scale, if provided
             pattern_brightness = (
-                int(brightness / 255 * 100) if brightness is not None else None
+                _to_jf_brightness(brightness) if brightness is not None else None
             )
             await self.api.async_apply_pattern(effect, self.zone, pattern_brightness)
         elif rgb_color or brightness:
             # Fill in the blanks (kwargs only contains changed attributes)
             # Convert brightness back to a 0..100 value
-            brightness = int((brightness or self.brightness) / 255 * 100)
+            brightness = _to_jf_brightness(brightness or self.brightness)
             rgb_color = rgb_color or self.rgb_color
             await self.api.async_apply_color(rgb_color, brightness, self.zone)
         else:
