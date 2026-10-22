@@ -5,7 +5,7 @@ Custom integration to integrate JellyFish Lighting with Home Assistant.
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.core_config import Config
-from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.helpers import device_registry
 
@@ -61,6 +61,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     )
 
     if not coordinator.last_update_success:
+        # Each setup retry creates a new client, so close this one's connection
+        try:
+            await client.async_disconnect()
+        except HomeAssistantError:
+            pass
         raise ConfigEntryNotReady
 
     registry = device_registry.async_get(hass)
@@ -101,10 +106,15 @@ class JellyfishLightingDataUpdateCoordinator(DataUpdateCoordinator):
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Handle removal of an entry."""
     LOGGER.info("Unloading JellyFish Lighting integration")
-    # coordinator = hass.data[DOMAIN][entry.entry_id]
     unloaded = await hass.config_entries.async_forward_entry_unload(entry, LIGHT)
     if unloaded:
-        hass.data[DOMAIN].pop(entry.entry_id)
+        coordinator = hass.data[DOMAIN].pop(entry.entry_id)
+        # Close the WebSocket so a reload doesn't leave the old connection
+        # (and its listener thread) running alongside the new one
+        try:
+            await coordinator.api.async_disconnect()
+        except HomeAssistantError:
+            LOGGER.warning("Failed to disconnect from the JellyFish controller")
     return unloaded
 
 
