@@ -22,7 +22,12 @@ from jellyfishlightspy import (
     ZONE_STATE_DATA,
 )
 from jellyfishlightspy.requests import SetZoneStateRequest
+from homeassistant.helpers import device_registry
 from .const import LOGGER, DOMAIN
+
+# Consecutive zone state polls with no response (and no push data in between)
+# before the connection is assumed dead and forcibly re-established
+MAX_MISSED_POLLS = 2
 
 
 class JellyfishLightingApiClient:
@@ -39,6 +44,8 @@ class JellyfishLightingApiClient:
         self._connecting = asyncio.Lock()
         self._reconnecting = False
         self._closing = False
+        self._missed_polls = 0
+        self._refresh_static = False
         self.zones: List[str] = []
         self.states: Dict[str, JellyFishLightingZoneData] = {}
         self.patterns: List[str] = []
@@ -158,11 +165,52 @@ class JellyfishLightingApiClient:
             self._controller.disconnect(timeout=3)
         except Exception:  # noqa: BLE001
             pass
+        # A half-open socket never fires on_close, so the library still reports
+        # itself as connected. Clear the flag so async_connect() doesn't treat
+        # the dead connection as live and skip reconnecting.
+        try:
+            self._controller._JellyFishController__ws_monitor._WebSocketMonitor__connected.clear()
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _note_missed_poll(self) -> None:
+        """Forces a reconnect after repeated unanswered polls.
+
+        If the controller stops responding without closing the socket (e.g. a
+        half-open TCP connection), neither on_close nor on_error fires and the
+        library keeps reporting itself as connected, so requests silently time
+        out until the controller is restarted.
+        """
+        self._missed_polls += 1
+        if (
+            self._missed_polls < MAX_MISSED_POLLS
+            or self._reconnecting
+            or self.connecting
+        ):
+            return
+        LOGGER.warning(
+            "JellyFish controller at %s stopped responding; forcing reconnect",
+            self.address,
+        )
+        self._missed_polls = 0
+        self._reconnecting = True
+        self._hass.async_create_task(self._async_reconnect())
+
+    def _update_device_info(self) -> None:
+        """Updates the device registry when controller info changes (e.g. after a firmware update)"""
+        if not self.hostname:
+            return
+        registry = device_registry.async_get(self._hass)
+        device = registry.async_get_device(identifiers={(DOMAIN, self.hostname)})
+        if device and device.sw_version != self.version:
+            registry.async_update_device(device.id, sw_version=self.version)
 
     def _recieve_push(self, data):
         """Updates state data when a push event is received from the controller"""
 
         async def update():
+            # Any message proves the connection is alive
+            self._missed_polls = 0
             if NAME_DATA in data:
                 self.name = self._controller.name
                 LOGGER.debug("[PUSH UPDATE] Name: %s", self.name)
@@ -172,6 +220,7 @@ class JellyfishLightingApiClient:
             elif FIRMWARE_VERSION_DATA in data:
                 self.version = self._controller.firmware_version.ver
                 LOGGER.debug("[PUSH UPDATE] Version: %s", self.version)
+                self._update_device_info()
             elif ZONE_CONFIG_DATA in data:
                 self.zones = self._controller.zone_names
                 LOGGER.debug("[PUSH UPDATE] Zones: %s", ", ".join(self.zones))
@@ -210,6 +259,9 @@ class JellyfishLightingApiClient:
                     self.address,
                 )
                 await self._hass.async_add_executor_job(self._controller.connect, 5)
+                # The controller may have rebooted (e.g. a firmware update), so
+                # re-fetch its info and pattern list on the next poll
+                self._refresh_static = True
         except JellyFishException as ex:
             raise HomeAssistantError(
                 f"Failed to connect to JellyFish Lighting controller at {self.address}"
@@ -240,13 +292,15 @@ class JellyfishLightingApiClient:
         explicitly on every 60s cycle races against that push flood and times
         out, which previously surfaced as UpdateFailed and marked the
         integration unavailable. We now only fetch each explicitly when it is
-        still missing, treat timeouts as non-fatal, and let push keep them
-        current.
+        still missing or after a (re)connect, treat timeouts as non-fatal, and
+        let push keep them current.
         """
         await self.async_connect()
+        refresh_static = self._refresh_static
+        self._refresh_static = False
         try:
             LOGGER.debug("Getting refreshed data from JellyFish Lighting controller")
-            if not self.name:
+            if not self.name or refresh_static:
                 try:
                     await self.async_get_controller_info()
                 except HomeAssistantError:
@@ -255,7 +309,7 @@ class JellyfishLightingApiClient:
                         "will retry on next poll or via push update",
                         self.address,
                     )
-            if not self.patterns:
+            if not self.patterns or refresh_static:
                 try:
                     await self._hass.async_add_executor_job(
                         self._controller.get_pattern_names, 30
@@ -294,11 +348,13 @@ class JellyfishLightingApiClient:
                 )
         try:
             await self.async_get_zone_states()
+            self._missed_polls = 0
         except HomeAssistantError:
             LOGGER.debug(
                 "Zone state poll timed out for %s; state is current via push updates",
                 self.address,
             )
+            self._note_missed_poll()
 
     async def async_get_controller_info(self):
         """Retrieves basic information from the controller"""
