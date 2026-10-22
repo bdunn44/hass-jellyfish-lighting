@@ -21,6 +21,7 @@ from jellyfishlightspy import (
     PATTERN_CONFIG_DATA,
     ZONE_STATE_DATA,
 )
+from jellyfishlightspy.requests import SetZoneStateRequest
 from .const import LOGGER, DOMAIN
 
 
@@ -354,18 +355,48 @@ class JellyfishLightingApiClient:
                 f"Failed to turn off JellyFish Lighting zone '{zone}'"
             ) from ex
 
-    async def async_apply_pattern(self, pattern: str, zone: str):
-        """Turn one or more zones on and apply a preset pattern. Affects all zones if zone list is None"""
+    async def async_apply_pattern(
+        self, pattern: str, zone: str, brightness: int = None
+    ):
+        """Turn one or more zones on and apply a preset pattern. Affects all zones if zone list is None.
+        If brightness (0-100) is given, the pattern is applied at that brightness instead of the
+        value it was saved with."""
         await self.async_connect()
         try:
-            LOGGER.debug("Applying pattern '%s' to zone %s", pattern, zone)
-            await self._hass.async_add_executor_job(
-                self._controller.apply_pattern, pattern, [zone], False
-            )
+            if brightness is None:
+                LOGGER.debug("Applying pattern '%s' to zone %s", pattern, zone)
+                await self._hass.async_add_executor_job(
+                    self._controller.apply_pattern, pattern, [zone], False
+                )
+            else:
+                LOGGER.debug(
+                    "Applying pattern '%s' to zone %s at %s%% brightness",
+                    pattern,
+                    zone,
+                    brightness,
+                )
+                config = await self._hass.async_add_executor_job(
+                    self._controller.get_pattern_config, pattern
+                )
+                config.runData.brightness = brightness
+                await self._hass.async_add_executor_job(
+                    self._apply_pattern_config, pattern, config, zone
+                )
         except JellyFishException as ex:
             raise HomeAssistantError(
                 f"Failed to apply pattern '{pattern}' on JellyFish Lighting zone '{zone}'"
             ) from ex
+
+    def _apply_pattern_config(self, pattern: str, config, zone: str):
+        """Run a pattern config while still reporting which pattern is active.
+
+        The library's apply_pattern_config() sends `data` without `file`, so the
+        controller reports an empty file and the zone's effect appears unset.
+        Sending both keeps the effect attribute populated.
+        """
+        self._controller._JellyFishController__send(
+            SetZoneStateRequest(state=1, zoneName=[zone], file=pattern, data=config)
+        )
 
     async def async_apply_color(
         self, rgb: Tuple[int, int, int], brightness: int, zone: str

@@ -126,7 +126,11 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
             brightness,
         )
         if effect:
-            await self.api.async_apply_pattern(effect, self.zone)
+            # Convert HA's 0..255 brightness to JellyFish's 0..100 scale, if provided
+            pattern_brightness = (
+                int(brightness / 255 * 100) if brightness is not None else None
+            )
+            await self.api.async_apply_pattern(effect, self.zone, pattern_brightness)
         elif rgb_color or brightness:
             # Fill in the blanks (kwargs only contains changed attributes)
             # Convert brightness back to a 0..100 value
