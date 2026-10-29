@@ -9,7 +9,7 @@ from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.helpers import device_registry
 
-from .api import JellyfishLightingApiClient
+from .api import JellyfishLightingApiClient, captured_patterns_store
 
 from .const import (
     LOGGER,
@@ -49,6 +49,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
 
     address = entry.data.get(CONF_ADDRESS)
     client = JellyfishLightingApiClient(address, entry, hass)
+    await client.async_load_captured_patterns()
     coordinator = JellyfishLightingDataUpdateCoordinator(hass, client=client)
     await coordinator.async_refresh()
     # try:
@@ -117,6 +118,11 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         except HomeAssistantError:
             LOGGER.warning("Failed to disconnect from the JellyFish controller")
     return unloaded
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Delete the patterns captured for an entry when it's removed."""
+    await captured_patterns_store(hass, entry.entry_id).async_remove()
 
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:

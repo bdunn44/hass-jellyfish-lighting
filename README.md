@@ -8,7 +8,7 @@
 [![Community Forum][forum-badge]][forum]
 [![BuyMeCoffee][buymecoffee-badge]][buymecoffee]
 
-This component is designed to integrate with [JellyFish Lighting][jellyfish-lighting] installations. It currently supports turning lights on & off, setting solid colors with brightness control, and playing pre-saved patterns. If your installation includes more than one zone you can control each zone individually.
+This component is designed to integrate with [JellyFish Lighting][jellyfish-lighting] installations. It currently supports turning lights on & off, setting solid colors with brightness control, and playing patterns saved on the controller or captured from the JellyFish app's library. If your installation includes more than one zone you can control each zone individually.
 
 <img src=".github/images/combined.png" alt="Screenshots of JellyFish Lighting integration for Home Assistant" style="max-width:600px"/>
 
@@ -44,6 +44,18 @@ _**Note:** it is highly recommended to set a static IP for your controller if yo
 1. Enter the host/IP of your Jellyfish Controller.
 
 _**Note:** it is highly recommended to set a static IP for your controller if you haven't already!_
+
+## Patterns
+
+Every pattern saved on your controller appears as an effect on each zone's light, named `Folder/Pattern` (for example `Christmas/Candy Canes`).
+
+### Patterns from the JellyFish app's library
+
+Patterns shown with a cloud icon in the JellyFish app aren't stored on the controller, so the integration can't list them up front. Once you run one from the app, Home Assistant captures it and adds it to the effect list. From then on you can play it from Home Assistant like any other pattern, including in automations and at any brightness.
+
+- Run each library pattern you want once from the app. It shows up in Home Assistant within a few seconds.
+- Captured patterns are kept across restarts and are deleted when you remove the integration.
+- Looks you make in the app without saving them aren't captured.
 
 ## Trademark Legal Notices
 
