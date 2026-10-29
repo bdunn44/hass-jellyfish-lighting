@@ -16,5 +16,17 @@
             "already_configured": "Already configured. Only a single configuration possible.",
             "cannot_connect": "Failed to connect"
         }
+    },
+    "services": {
+        "forget_captured_pattern": {
+            "name": "Forget captured pattern",
+            "description": "Removes a pattern captured from the JellyFish app from the effect list. If the pattern is playing on a zone, it's captured again.",
+            "fields": {
+                "pattern": {
+                    "name": "Pattern",
+                    "description": "The captured pattern's name, as it appears in the effect list (Folder/Name)."
+                }
+            }
+        }
     }
 }

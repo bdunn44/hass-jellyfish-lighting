@@ -3,15 +3,7 @@
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.entity import DeviceInfo
 
-from .const import (
-    DOMAIN,
-    NAME,
-    DEVICE,
-    ATTRIBUTION,
-    CONF_NAME,
-    CONF_HOSTNAME,
-    CONF_VERSION,
-)
+from .const import DOMAIN, ATTRIBUTION
 
 
 class JellyfishLightingEntity(CoordinatorEntity):
@@ -27,16 +19,10 @@ class JellyfishLightingEntity(CoordinatorEntity):
 
     @property
     def device_info(self) -> DeviceInfo:
-        data = self.config_entry.data
-        return DeviceInfo(
-            identifiers={
-                (DOMAIN, data.get(CONF_HOSTNAME)),
-            },
-            name=data.get(CONF_NAME),
-            manufacturer=NAME,
-            model=DEVICE,
-            sw_version=data.get(CONF_VERSION),
-        )
+        # Only link to the device created in async_setup_entry. Passing name or
+        # sw_version here overwrote the device with the values saved in the
+        # config entry at setup, so a firmware update never showed up.
+        return DeviceInfo(identifiers={(DOMAIN, self.coordinator.api.hostname)})
 
     @property
     def extra_state_attributes(self):

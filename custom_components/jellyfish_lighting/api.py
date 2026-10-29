@@ -1,10 +1,12 @@
 """Sample API Client."""
 
 import asyncio
+import json
 from typing import List, Tuple, Dict
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import (
     CoordinatorEntity,
     DataUpdateCoordinator,
@@ -37,6 +39,17 @@ MAX_FAILED_RECONNECTS = 2
 # Upper bound (seconds) for the exponential backoff between reconnect attempts
 MAX_RECONNECT_DELAY = 300
 
+CAPTURED_PATTERNS_STORAGE_VERSION = 1
+
+
+def captured_patterns_store(hass: HomeAssistant, entry_id: str) -> Store:
+    """Storage for the patterns captured for a config entry"""
+    return Store(
+        hass,
+        CAPTURED_PATTERNS_STORAGE_VERSION,
+        f"{DOMAIN}.captured_patterns.{entry_id}",
+    )
+
 
 class JellyfishLightingApiClient:
     """API Client for JellyFish Lighting"""
@@ -57,7 +70,13 @@ class JellyfishLightingApiClient:
         self._refresh_static = False
         self.zones: List[str] = []
         self.states: Dict[str, JellyFishLightingZoneData] = {}
+        # Effect list: patterns saved on the controller plus captured ones
         self.patterns: List[str] = []
+        self._controller_patterns: List[str] = []
+        # Patterns the JellyFish app ran that aren't saved on the controller
+        # (e.g. its cloud library), as the raw pattern JSON it sent
+        self._captured: Dict[str, str] = {}
+        self._store = captured_patterns_store(hass, config_entry.entry_id)
         self.name: str = None
         self.hostname: str = None
         self.version: str = None
@@ -66,6 +85,18 @@ class JellyfishLightingApiClient:
             on_error=self._attempt_reconnect,
             on_close=self._attempt_reconnect,
         )
+        # The library parses runPattern data into a PatternConfig, which drops
+        # settings it doesn't know (e.g. fireworkSettings), so capturing needs
+        # the raw message. connect() reads on_message from the monitor each
+        # time it creates the WebSocket, so wrapping it here covers reconnects.
+        monitor = self._controller._JellyFishController__ws_monitor
+        on_message = monitor.on_message
+
+        def on_raw_message(ws, message):
+            on_message(ws, message)
+            self._capture_pattern(message)
+
+        monitor.on_message = on_raw_message
 
     @property
     def _coord(self) -> DataUpdateCoordinator:
@@ -247,6 +278,96 @@ class JellyfishLightingApiClient:
         if device and device.sw_version != self.version:
             registry.async_update_device(device.id, sw_version=self.version)
 
+    def _update_patterns(self) -> None:
+        # The controller pushes zone states before its pattern list on connect,
+        # so a pattern saved on the controller can be captured by mistake
+        saved = [p for p in self._captured if p in self._controller_patterns]
+        for pattern in saved:
+            del self._captured[pattern]
+        if saved:
+            self._store.async_delay_save(lambda: self._captured, 5)
+        self.patterns = sorted(set(self._controller_patterns) | set(self._captured))
+
+    async def async_load_captured_patterns(self) -> None:
+        """Loads patterns captured in earlier sessions"""
+        self._captured = await self._store.async_load() or {}
+        self._update_patterns()
+
+    def _patterns_changed(self) -> None:
+        """Saves captured patterns and refreshes the effect lists"""
+        self._update_patterns()
+        self._store.async_delay_save(lambda: self._captured, 5)
+        coord = self._coord
+        if coord is not None:
+            coord.async_update_listeners()
+
+    def _capture_pattern(self, message: str) -> None:
+        """Remembers a pattern the JellyFish app ran that isn't saved on the controller.
+
+        The app sends its cloud library patterns (e.g. "Halloween/Lightning
+        Storm") as a full pattern definition alongside the name, and the
+        controller pushes that back to every client. Storing it lets the
+        pattern be offered as an effect and replayed later.
+
+        Only patterns that are playing are captured. The controller also
+        reports each zone's last pattern when it's off (on every connect), and
+        capturing those would bring back patterns removed with
+        async_forget_captured_pattern. Ad-hoc looks the app runs without a
+        name (or under a "_" folder like "_JF-CUSTOM") are skipped.
+        """
+        try:
+            msg = json.loads(message)
+        except ValueError:
+            return
+        run = msg.get("runPattern") if msg.get("cmd") == "fromCtlr" else None
+        if not isinstance(run, dict) or not run.get("state"):
+            return
+        file = run.get("file") or ""
+        if "/" not in file or file.startswith("_"):
+            return
+        try:
+            config = json.loads(run.get("data") or "")
+        except ValueError:
+            return
+        if not isinstance(config, dict):
+            return
+
+        async def store():
+            if file in self._controller_patterns:
+                return
+            # The latest definition wins so a pattern updated in the app's
+            # library doesn't go stale, except for brightness: it's chosen per
+            # run (HA replays at any brightness and the controller echoes that
+            # back), so keep the brightness the pattern was first captured with
+            old = self._captured.get(file)
+            if old is not None:
+                old_config = json.loads(old)
+                old_run, new_run = old_config.get("runData"), config.get("runData")
+                if (
+                    isinstance(old_run, dict)
+                    and isinstance(new_run, dict)
+                    and "brightness" in old_run
+                ):
+                    new_run["brightness"] = old_run["brightness"]
+                if config == old_config:
+                    return
+                LOGGER.info("Updated captured pattern '%s'", file)
+            else:
+                LOGGER.info("Captured pattern '%s' from the JellyFish app", file)
+            self._captured[file] = json.dumps(config, separators=(",", ":"))
+            self._patterns_changed()
+
+        asyncio.run_coroutine_threadsafe(store(), self._hass.loop)
+
+    def async_forget_captured_pattern(self, pattern: str) -> bool:
+        """Removes a captured pattern. Returns False if it wasn't captured."""
+        if pattern not in self._captured:
+            return False
+        LOGGER.info("Forgetting captured pattern '%s'", pattern)
+        del self._captured[pattern]
+        self._patterns_changed()
+        return True
+
     def _recieve_push(self, data):
         """Updates state data when a push event is received from the controller"""
 
@@ -267,10 +388,11 @@ class JellyfishLightingApiClient:
                 self.zones = self._controller.zone_names
                 LOGGER.debug("[PUSH UPDATE] Zones: %s", ", ".join(self.zones))
             elif PATTERN_LIST_DATA in data or PATTERN_CONFIG_DATA in data:
-                patterns = self._controller.pattern_names
-                patterns.sort()
-                self.patterns = patterns
-                LOGGER.debug("[PUSH UPDATE] Patterns: %s", ", ".join(self.patterns))
+                self._controller_patterns = self._controller.pattern_names
+                self._update_patterns()
+                LOGGER.debug(
+                    "[PUSH UPDATE] Patterns: %s", ", ".join(self._controller_patterns)
+                )
             elif ZONE_STATE_DATA in data:
                 for zone, state in self._controller.zone_states.items():
                     if not state:
@@ -361,7 +483,7 @@ class JellyfishLightingApiClient:
                         "will retry on next poll or via push update",
                         self.address,
                     )
-            if not self.patterns or refresh_static:
+            if not self._controller_patterns or refresh_static:
                 try:
                     await self._hass.async_add_executor_job(
                         self._controller.get_pattern_names, 30
@@ -471,7 +593,15 @@ class JellyfishLightingApiClient:
         value it was saved with."""
         await self.async_connect()
         try:
-            if brightness is None:
+            if pattern not in self._controller_patterns and pattern in self._captured:
+                LOGGER.debug("Applying captured pattern '%s' to zone %s", pattern, zone)
+                config = json.loads(self._captured[pattern])
+                if brightness is not None and "runData" in config:
+                    config["runData"]["brightness"] = brightness
+                await self._hass.async_add_executor_job(
+                    self._apply_pattern_config, pattern, config, zone
+                )
+            elif brightness is None:
                 LOGGER.debug("Applying pattern '%s' to zone %s", pattern, zone)
                 await self._hass.async_add_executor_job(
                     self._controller.apply_pattern, pattern, [zone], False
