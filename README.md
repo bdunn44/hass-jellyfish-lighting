@@ -54,8 +54,17 @@ Every pattern saved on your controller appears as an effect on each zone's light
 Patterns shown with a cloud icon in the JellyFish app aren't stored on the controller, so the integration can't list them up front. Once you run one from the app, Home Assistant captures it and adds it to the effect list. From then on you can play it from Home Assistant like any other pattern, including in automations and at any brightness.
 
 - Run each library pattern you want once from the app. It shows up in Home Assistant within a few seconds.
+- Running a pattern from the app again refreshes Home Assistant's copy, so changes JellyFish makes to its library come through. The brightness it was first captured with is kept as its default.
 - Captured patterns are kept across restarts and are deleted when you remove the integration.
 - Looks you make in the app without saving them aren't captured.
+
+To remove a captured pattern from the effect list, use the **Forget captured pattern** action. If the pattern is playing on a zone at the time, it's captured again, so turn the zone off or change its pattern first.
+
+```yaml
+action: jellyfish_lighting.forget_captured_pattern
+data:
+  pattern: "Halloween/Lightning Storm"
+```
 
 ## Trademark Legal Notices
 

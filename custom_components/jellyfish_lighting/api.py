@@ -293,41 +293,80 @@ class JellyfishLightingApiClient:
         self._captured = await self._store.async_load() or {}
         self._update_patterns()
 
+    def _patterns_changed(self) -> None:
+        """Saves captured patterns and refreshes the effect lists"""
+        self._update_patterns()
+        self._store.async_delay_save(lambda: self._captured, 5)
+        coord = self._coord
+        if coord is not None:
+            coord.async_update_listeners()
+
     def _capture_pattern(self, message: str) -> None:
         """Remembers a pattern the JellyFish app ran that isn't saved on the controller.
 
         The app sends its cloud library patterns (e.g. "Halloween/Lightning
         Storm") as a full pattern definition alongside the name, and the
         controller pushes that back to every client. Storing it lets the
-        pattern be offered as an effect and replayed later. Ad-hoc looks the
-        app runs without a name (or under a "_" folder like "_JF-CUSTOM") are
-        skipped.
+        pattern be offered as an effect and replayed later.
+
+        Only patterns that are playing are captured. The controller also
+        reports each zone's last pattern when it's off (on every connect), and
+        capturing those would bring back patterns removed with
+        async_forget_captured_pattern. Ad-hoc looks the app runs without a
+        name (or under a "_" folder like "_JF-CUSTOM") are skipped.
         """
         try:
             msg = json.loads(message)
         except ValueError:
             return
         run = msg.get("runPattern") if msg.get("cmd") == "fromCtlr" else None
-        if not isinstance(run, dict):
+        if not isinstance(run, dict) or not run.get("state"):
             return
-        file, data = run.get("file") or "", run.get("data") or ""
-        if not data or "/" not in file or file.startswith("_"):
+        file = run.get("file") or ""
+        if "/" not in file or file.startswith("_"):
+            return
+        try:
+            config = json.loads(run.get("data") or "")
+        except ValueError:
+            return
+        if not isinstance(config, dict):
             return
 
         async def store():
-            # The first capture wins, so replaying a captured pattern at a
-            # different brightness doesn't overwrite its saved definition
-            if file in self._controller_patterns or file in self._captured:
+            if file in self._controller_patterns:
                 return
-            LOGGER.info("Captured pattern '%s' from the JellyFish app", file)
-            self._captured[file] = data
-            self._update_patterns()
-            self._store.async_delay_save(lambda: self._captured, 5)
-            coord = self._coord
-            if coord is not None:
-                coord.async_update_listeners()
+            # The latest definition wins so a pattern updated in the app's
+            # library doesn't go stale, except for brightness: it's chosen per
+            # run (HA replays at any brightness and the controller echoes that
+            # back), so keep the brightness the pattern was first captured with
+            old = self._captured.get(file)
+            if old is not None:
+                old_config = json.loads(old)
+                old_run, new_run = old_config.get("runData"), config.get("runData")
+                if (
+                    isinstance(old_run, dict)
+                    and isinstance(new_run, dict)
+                    and "brightness" in old_run
+                ):
+                    new_run["brightness"] = old_run["brightness"]
+                if config == old_config:
+                    return
+                LOGGER.info("Updated captured pattern '%s'", file)
+            else:
+                LOGGER.info("Captured pattern '%s' from the JellyFish app", file)
+            self._captured[file] = json.dumps(config, separators=(",", ":"))
+            self._patterns_changed()
 
         asyncio.run_coroutine_threadsafe(store(), self._hass.loop)
+
+    def async_forget_captured_pattern(self, pattern: str) -> bool:
+        """Removes a captured pattern. Returns False if it wasn't captured."""
+        if pattern not in self._captured:
+            return False
+        LOGGER.info("Forgetting captured pattern '%s'", pattern)
+        del self._captured[pattern]
+        self._patterns_changed()
+        return True
 
     def _recieve_push(self, data):
         """Updates state data when a push event is received from the controller"""

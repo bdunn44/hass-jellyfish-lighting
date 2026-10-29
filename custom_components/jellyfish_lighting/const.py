@@ -21,6 +21,10 @@ ICON = "mdi:home-lightbulb-outline"
 # Platforms
 LIGHT = "light"
 
+# Actions
+SERVICE_FORGET_CAPTURED_PATTERN = "forget_captured_pattern"
+ATTR_PATTERN = "pattern"
+
 # Configuration and options
 CONF_ADDRESS = "host"
 CONF_NAME = "name"

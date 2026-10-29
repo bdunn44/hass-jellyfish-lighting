@@ -1,0 +1,7 @@
+forget_captured_pattern:
+  fields:
+    pattern:
+      required: true
+      example: "Halloween/Lightning Storm"
+      selector:
+        text:

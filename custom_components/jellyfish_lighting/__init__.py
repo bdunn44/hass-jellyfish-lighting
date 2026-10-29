@@ -2,10 +2,17 @@
 Custom integration to integrate JellyFish Lighting with Home Assistant.
 """
 
+import voluptuous as vol
+
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.core_config import Config
-from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
+from homeassistant.exceptions import (
+    ConfigEntryNotReady,
+    HomeAssistantError,
+    ServiceValidationError,
+)
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.helpers import device_registry
 
@@ -14,6 +21,8 @@ from .api import JellyfishLightingApiClient, captured_patterns_store
 from .const import (
     LOGGER,
     SCAN_INTERVAL,
+    ATTR_PATTERN,
+    SERVICE_FORGET_CAPTURED_PATTERN,
     CONF_ADDRESS,
     DOMAIN,
     NAME,
@@ -22,11 +31,31 @@ from .const import (
     STARTUP_MESSAGE,
 )
 
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
 
 async def async_setup(
     hass: HomeAssistant, config: Config
 ):  # pylint: disable=unused-argument
     """Setting up this integration using YAML is not supported."""
+
+    async def forget_captured_pattern(call: ServiceCall) -> None:
+        pattern = call.data[ATTR_PATTERN]
+        forgotten = [
+            coordinator.api.async_forget_captured_pattern(pattern)
+            for coordinator in hass.data.get(DOMAIN, {}).values()
+        ]
+        if not any(forgotten):
+            raise ServiceValidationError(
+                f"'{pattern}' isn't a pattern captured from the JellyFish app"
+            )
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_FORGET_CAPTURED_PATTERN,
+        forget_captured_pattern,
+        schema=vol.Schema({vol.Required(ATTR_PATTERN): cv.string}),
+    )
     return True
 
 
