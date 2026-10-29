@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import socket
 from typing import List, Tuple, Dict
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -221,21 +222,35 @@ class JellyfishLightingApiClient:
         finally:
             self._reconnecting = False
 
+    def _close_websocket(self, timeout: float) -> None:
+        """Closes the WebSocket and waits for its thread to exit.
+
+        The library's reader thread waits in select() with a 10s timeout, and
+        neither WebSocket.close() nor closing the socket reliably wakes it. A
+        thread that exits after a new connection is open fires on_close on the
+        monitor that connection shares, marking it disconnected and triggering
+        another reconnect. Shutting the raw socket down wakes the thread at
+        once, and also releases the controller's session if the connection is
+        half-open.
+        """
+        app = getattr(self._controller, "_JellyFishController__ws", None)
+        if app is not None:
+            app.keep_running = False
+            ws = app.sock
+            if ws is not None and ws.sock is not None:
+                # The woken thread's teardown then closes the socket. Sending a
+                # close frame first would clear ws.connected, which makes that
+                # teardown skip closing it.
+                try:
+                    ws.sock.shutdown(socket.SHUT_RDWR)
+                except OSError:
+                    pass
+        self._controller.disconnect(timeout)
+
     def _force_close_connection(self):
         """Force-close the underlying WebSocket and TCP connection."""
-        # Grab the WebSocket object before disconnect() can set it to None.
-        # WebSocket.close() has an early-exit guard (if not self.connected: return)
-        # that skips socket teardown when the connection has already errored.
-        # WebSocket.shutdown() has no such guard and directly closes the raw
-        # TCP socket, which is what we need to release the controller's session.
         try:
-            ws = self._controller._JellyFishController__ws
-            if hasattr(ws, "sock") and ws.sock and hasattr(ws.sock, "shutdown"):
-                ws.sock.shutdown()
-        except Exception:  # noqa: BLE001
-            pass
-        try:
-            self._controller.disconnect(timeout=3)
+            self._close_websocket(3)
         except Exception:  # noqa: BLE001
             pass
         # A half-open socket never fires on_close, so the library still reports
@@ -443,7 +458,7 @@ class JellyfishLightingApiClient:
                     "Disconnecting from the JellyFish Lighting controller at %s",
                     self.address,
                 )
-                await self._hass.async_add_executor_job(self._controller.disconnect, 5)
+                await self._hass.async_add_executor_job(self._close_websocket, 5)
         except JellyFishException as ex:
             raise HomeAssistantError(
                 f"Failed to disconnect from JellyFish Lighting controller at {self.address}"
