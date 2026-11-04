@@ -27,6 +27,9 @@ from jellyfishlightspy import (
 from jellyfishlightspy.requests import SetZoneStateRequest
 from homeassistant.helpers import device_registry
 from .const import LOGGER, DOMAIN
+from .compat import patch_pattern_config_parsing
+
+patch_pattern_config_parsing()
 
 # Consecutive zone state polls with no response (and no push data in between)
 # before the connection is assumed dead and forcibly re-established
