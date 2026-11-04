@@ -25,3 +25,10 @@ jobs:
         draft: true
         generateReleaseNotes: true
         makeLatest: true
+        # If a release for this tag already exists (e.g. created by hand), attach
+        # the zip to it instead of creating a second draft (see #45). Leave its
+        # published state, title and notes alone.
+        allowUpdates: true
+        omitDraftDuringUpdate: true
+        omitNameDuringUpdate: true
+        omitBodyDuringUpdate: true
