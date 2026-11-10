@@ -101,6 +101,15 @@ class JellyfishLightingLight(JellyfishLightingEntity, LightEntity):
         return (state.color or DEFAULT_COLOR) if state else DEFAULT_COLOR
 
     @property
+    def extra_state_attributes(self):
+        """Add the running pattern's colors to the base attributes."""
+        state = self.api.states.get(self.zone)
+        return {
+            **super().extra_state_attributes,
+            "pattern_colors": state.pattern_colors if state else None,
+        }
+
+    @property
     def brightness(self) -> int | None:
         """Return the brightness of this light between 0..255."""
         state = self.api.states.get(self.zone)
