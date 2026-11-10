@@ -682,11 +682,13 @@ class JellyFishLightingZoneData:
         file: str = None,
         color: tuple[int, int, int] = None,
         brightness: int = None,
+        pattern_colors: list[list[int]] = None,
     ):
         self.is_on = is_on
         self.file = file
         self.color = color
         self.brightness = brightness
+        self.pattern_colors = pattern_colors
 
     @classmethod
     def from_zone_state(cls, state: ZoneState):
@@ -698,6 +700,14 @@ class JellyFishLightingZoneData:
             data.brightness = state.data.runData.brightness
             if state.data.type == "Color" and len(state.data.colors) == 3:
                 data.color = tuple(state.data.colors)
+            # Distinct non-black RGB triplets of the running pattern, in order
+            colors = list(state.data.colors or [])
+            seen = []
+            for i in range(0, len(colors) - 2, 3):
+                rgb = colors[i : i + 3]
+                if any(rgb) and rgb not in seen:
+                    seen.append(rgb)
+            data.pattern_colors = seen
         return data
 
     def __repr__(self) -> str:
