@@ -59,9 +59,13 @@ class JellyfishLightingApiClient:
     """API Client for JellyFish Lighting"""
 
     def __init__(
-        self, address: str, config_entry: ConfigEntry, hass: HomeAssistant
+        self, address: str, config_entry: ConfigEntry | None, hass: HomeAssistant
     ) -> None:
-        """Initialize API client."""
+        """Initialize API client.
+
+        config_entry is None while the config flow tests the connection: there
+        is no entry yet, so captured patterns are kept in memory only.
+        """
         self.address = address
         self._config_entry = config_entry
         self._hass = hass
@@ -80,7 +84,11 @@ class JellyfishLightingApiClient:
         # Patterns the JellyFish app ran that aren't saved on the controller
         # (e.g. its cloud library), as the raw pattern JSON it sent
         self._captured: Dict[str, str] = {}
-        self._store = captured_patterns_store(hass, config_entry.entry_id)
+        self._store = (
+            captured_patterns_store(hass, config_entry.entry_id)
+            if config_entry is not None
+            else None
+        )
         self.name: str = None
         self.hostname: str = None
         self.version: str = None
@@ -108,6 +116,8 @@ class JellyfishLightingApiClient:
         # been stored in hass.data yet. The controller floods push data on
         # connect, which can fire _recieve_push before async_setup_entry has
         # finished registering the coordinator.
+        if self._config_entry is None:
+            return None
         return self._hass.data.get(DOMAIN, {}).get(self._config_entry.entry_id)
 
     @property
@@ -303,18 +313,23 @@ class JellyfishLightingApiClient:
         for pattern in saved:
             del self._captured[pattern]
         if saved:
-            self._store.async_delay_save(lambda: self._captured, 5)
+            self._save_captured()
         self.patterns = sorted(set(self._controller_patterns) | set(self._captured))
 
     async def async_load_captured_patterns(self) -> None:
         """Loads patterns captured in earlier sessions"""
-        self._captured = await self._store.async_load() or {}
+        if self._store is not None:
+            self._captured = await self._store.async_load() or {}
         self._update_patterns()
+
+    def _save_captured(self) -> None:
+        if self._store is not None:
+            self._store.async_delay_save(lambda: self._captured, 5)
 
     def _patterns_changed(self) -> None:
         """Saves captured patterns and refreshes the effect lists"""
         self._update_patterns()
-        self._store.async_delay_save(lambda: self._captured, 5)
+        self._save_captured()
         coord = self._coord
         if coord is not None:
             coord.async_update_listeners()
