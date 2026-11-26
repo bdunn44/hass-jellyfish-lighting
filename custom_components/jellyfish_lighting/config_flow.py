@@ -1,7 +1,6 @@
 """Adds config flow for Blueprint."""
 from typing import Any
 from homeassistant import config_entries
-from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from homeassistant.data_entry_flow import FlowResult
 import voluptuous as vol
 from jellyfishlightspy import JellyFishException
@@ -34,8 +33,7 @@ class JellyfishLightingFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 LOGGER.info(
                     "Testing connection to JellyFish Lighting controller at %s...", host
                 )
-                session = async_create_clientsession(self.hass)
-                client = JellyfishLightingApiClient(host, session, self.hass)
+                client = JellyfishLightingApiClient(host, None, self.hass)
                 await client.async_connect()
                 LOGGER.info(
                     "Successfully connected to JellyFish Lighting controller at %s!",

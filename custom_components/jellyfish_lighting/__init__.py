@@ -24,6 +24,8 @@ from .const import (
     ATTR_PATTERN,
     SERVICE_FORGET_CAPTURED_PATTERN,
     CONF_ADDRESS,
+    CONF_HOSTNAME,
+    CONF_NAME,
     DOMAIN,
     NAME,
     DEVICE,
@@ -86,9 +88,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     # except Exception as e:
     #     LOGGER.exception("Error fetching %s data", DOMAIN)
     #     raise ConfigEntryNotReady from e
-    hass.config_entries.async_update_entry(
-        entry, title=f"{client.name} ({client.hostname})"
-    )
+    # The controller may not have reported its info yet (it's busy flooding
+    # push data on connect), so fall back to what was saved at setup. Using
+    # None would register a second device with no hostname.
+    name = client.name or entry.data.get(CONF_NAME)
+    hostname = client.hostname or entry.data.get(CONF_HOSTNAME)
+    hass.config_entries.async_update_entry(entry, title=f"{name} ({hostname})")
 
     if not coordinator.last_update_success:
         # Each setup retry creates a new client, so close this one's connection
@@ -101,8 +106,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     registry = device_registry.async_get(hass)
     registry.async_get_or_create(
         config_entry_id=entry.entry_id,
-        identifiers={(DOMAIN, client.hostname)},
-        name=client.name,
+        identifiers={(DOMAIN, hostname)},
+        name=name,
         manufacturer=NAME,
         model=DEVICE,
         sw_version=client.version,
@@ -132,6 +137,21 @@ class JellyfishLightingDataUpdateCoordinator(DataUpdateCoordinator):
             # The coordinator logs the first failure and the recovery, so an
             # outage doesn't log a traceback on every poll
             raise UpdateFailed(str(exception)) from exception
+
+
+async def async_remove_config_entry_device(
+    hass: HomeAssistant, entry: ConfigEntry, device: device_registry.DeviceEntry
+) -> bool:
+    """Allow deleting any device except the controller this entry is set up for.
+
+    Earlier versions could register a stray device with no hostname when the
+    controller hadn't reported its info yet at setup.
+    """
+    coordinator = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+    hostname = (coordinator and coordinator.api.hostname) or entry.data.get(
+        CONF_HOSTNAME
+    )
+    return (DOMAIN, hostname) not in device.identifiers
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
