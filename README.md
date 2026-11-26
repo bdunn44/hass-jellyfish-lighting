@@ -49,6 +49,18 @@ _**Note:** it is highly recommended to set a static IP for your controller if yo
 
 Every pattern saved on your controller appears as an effect on each zone's light, named `Folder/Pattern` (for example `Christmas/Candy Canes`).
 
+### Pattern colors
+
+Each zone light exposes a `pattern_colors` attribute: the distinct, non-black RGB colors of the pattern the zone is running, in the order the pattern lists them (for example `[[255, 0, 0], [0, 255, 0]]` for `Christmas/Red Green`). The controller keeps reporting the last pattern while the zone is off, so the attribute stays populated. Use it to match other lights to whatever the JellyFish is showing:
+
+```yaml
+action: light.turn_on
+target:
+  entity_id: light.porch
+data:
+  rgb_color: "{{ state_attr('light.jellyfish_front', 'pattern_colors')[0] }}"
+```
+
 ### Patterns from the JellyFish app's library
 
 Patterns shown with a cloud icon in the JellyFish app aren't stored on the controller, so the integration can't list them up front. Once you run one from the app, Home Assistant captures it and adds it to the effect list. From then on you can play it from Home Assistant like any other pattern, including in automations and at any brightness.
